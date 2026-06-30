@@ -8,6 +8,7 @@ pub struct VaultEntry {
     pub username: String,
     pub password: String,
     pub notes: String,
+    pub group: String,
     pub category: String,
     pub created_at: String,
     pub updated_at: String,

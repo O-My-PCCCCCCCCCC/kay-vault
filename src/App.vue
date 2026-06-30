@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { ref, h } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { darkTheme, zhCN, dateZhCN, NIcon } from 'naive-ui'
 import { LockClosed20Filled as LockIcon, Settings20Filled as SettingsIcon } from '@vicons/fluent'
 import { useAppStore } from './stores/app'
@@ -35,15 +35,22 @@ import LockScreen from './components/LockScreen.vue'
 
 const appStore = useAppStore()
 const router = useRouter()
-const activeKey = ref('vault')
+const route = useRoute()
+const activeKey = ref((route.name as string) || 'vault')
 
 const menuOptions = [
-  { label: '我的密码', key: 'vault', icon: () => h(NIcon, null, { default: () => h(LockIcon) }) },
-  { label: '设置', key: 'settings', icon: () => h(NIcon, null, { default: () => h(SettingsIcon) }) },
+  { label: '🔑 我的密码', key: 'vault' },
+  { label: '💻 终端', key: 'terminal' },
+  { label: '🔐 API 密钥', key: 'api-keys' },
+  { label: '⚙️ 设置', key: 'settings' },
 ]
 
+const routeMap: Record<string, string> = {
+  vault: '/', terminal: '/terminal', 'api-keys': '/api-keys', settings: '/settings',
+}
+
 function onMenuChange(key: string) {
-  router.push(key === 'vault' ? '/' : '/settings')
+  router.push(routeMap[key] || '/')
 }
 </script>
 
