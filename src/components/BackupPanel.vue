@@ -3,22 +3,33 @@
     <h3>备份与还原</h3>
     <p class="section-desc">备份目录: C:/LuSh-Password-Backup</p>
 
-    <n-space>
+    <n-space vertical>
+      <n-space>
+        <n-button
+          type="primary"
+          :loading="backingUp"
+          :disabled="!authorized"
+          @click="doBackup"
+        >
+          备份到 C:/LuSh-Password-Backup
+        </n-button>
+        <n-button
+          type="warning"
+          :loading="restoring"
+          :disabled="!authorized"
+          @click="confirmRestore"
+        >
+          从最新备份还原
+        </n-button>
+      </n-space>
+
       <n-button
-        type="primary"
-        :loading="backingUp"
-        :disabled="!authorized"
-        @click="doBackup"
+        type="info"
+        ghost
+        @click="importFile"
+        :loading="importing"
       >
-        备份到 C:/LuSh-Password-Backup
-      </n-button>
-      <n-button
-        type="warning"
-        :loading="restoring"
-        :disabled="!authorized"
-        @click="confirmRestore"
-      >
-        从最新备份还原
+        导入备份文件（从本机选择 .enc 文件）
       </n-button>
     </n-space>
 
@@ -31,14 +42,17 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { useDialog, useMessage } from 'naive-ui'
+import { open } from '@tauri-apps/plugin-dialog'
+import { useMessage } from 'naive-ui'
+import { useVaultStore } from '../stores/vault'
 
+const vault = useVaultStore()
 const authorized = ref(false)
 const backingUp = ref(false)
 const restoring = ref(false)
+const importing = ref(false)
 const lastBackup = ref('')
 const backupList = ref<string[]>([])
-const dialog = useDialog()
 const message = useMessage()
 
 async function refresh() {
@@ -64,24 +78,45 @@ async function doBackup() {
   }
 }
 
-function confirmRestore() {
-  dialog.warning({
-    title: '还原密码库',
-    content: '还原将覆盖当前所有密码数据，确定继续？',
-    positiveText: '确认还原',
-    negativeText: '取消',
-    onPositiveClick: async () => {
-      restoring.value = true
-      try {
-        await invoke('restore_from_usb', { filename: null as any })
-        message.success('还原成功，请重新解锁')
-      } catch (e: any) {
-        message.error(String(e))
-      } finally {
-        restoring.value = false
-      }
-    },
+async function confirmRestore() {
+  if (!window.confirm('还原将覆盖当前所有密码数据，确定继续？')) return
+  restoring.value = true
+  try {
+    await invoke('restore_from_usb', { filename: null as any })
+    message.success('还原成功，请重新解锁')
+  } catch (e: any) {
+    message.error(String(e))
+  } finally {
+    restoring.value = false
+  }
+}
+
+async function importFile() {
+  // 打开系统原生文件选择器，筛选 .enc 文件
+  const selected = await open({
+    multiple: false,
+    filters: [{
+      name: '备份文件',
+      extensions: ['enc'],
+    }],
   })
+  if (!selected) return // 用户取消
+
+  const filePath = selected as string
+
+  if (!window.confirm(`将导入 ${filePath} 并覆盖当前所有密码数据，确定继续？`)) return
+  importing.value = true
+  try {
+    await invoke('import_from_file', {
+      filePath,
+      password: vault.masterPassword,
+    })
+    message.success('导入成功，请重新解锁')
+  } catch (e: any) {
+    message.error(String(e))
+  } finally {
+    importing.value = false
+  }
 }
 
 onMounted(refresh)

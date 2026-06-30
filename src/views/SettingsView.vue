@@ -1,44 +1,85 @@
 <template>
   <div class="settings-view">
-    <h2>设置</h2>
+    <h2 class="s-title">⚙️ 设置</h2>
 
-    <n-divider />
+    <n-divider style="margin: 8px 0" />
 
-    <n-card title="安全" :bordered="false" class="setting-card">
-      <n-form-item label="自动锁定时间">
-        <n-select v-model:value="autoLock" :options="lockOptions" style="width: 160px" />
-      </n-form-item>
-      <n-button type="primary" @click="showChangePwd = true">修改主密码</n-button>
-    </n-card>
+    <div class="s-group">
+      <div class="s-group-title">🔒 安全</div>
+      <div class="s-row">
+        <span class="s-label">自动锁定</span>
+        <n-select v-model:value="autoLock" :options="lockOptions" style="width: 130px" size="small" />
+      </div>
+      <div class="s-row">
+        <span class="s-label">主密码</span>
+        <n-button size="small" type="primary" @click="showChangePwd = true">修改</n-button>
+      </div>
+    </div>
 
-    <n-divider />
+    <n-divider style="margin: 8px 0" />
 
-    <n-card title="设备认证" :bordered="false" class="setting-card">
+    <div class="s-group">
+      <div class="s-group-title">🔐 独立锁定</div>
+      <div class="s-row">
+        <span class="s-label">密码库</span>
+        <n-button v-if="!appStore.vaultLocked" size="small" @click="doLockVault">🔒 锁定</n-button>
+        <n-button v-else size="small" type="primary" @click="showUnlockVault = true">🔓 已锁定·解锁</n-button>
+      </div>
+      <div class="s-row">
+        <span class="s-label">API 密钥</span>
+        <n-button v-if="!appStore.apiLocked" size="small" @click="doLockApi">🔒 锁定</n-button>
+        <n-button v-else size="small" type="primary" @click="showUnlockApi = true">🔓 已锁定·解锁</n-button>
+      </div>
+    </div>
+
+    <n-divider style="margin: 8px 0" />
+
+    <div class="s-group">
+      <div class="s-group-title">🔐 设备认证</div>
       <DeviceAuthList />
-    </n-card>
+    </div>
 
-    <n-divider />
+    <n-divider style="margin: 8px 0" />
 
-    <n-card title="备份与还原" :bordered="false" class="setting-card">
+    <div class="s-group">
+      <div class="s-group-title">💾 备份与还原</div>
       <BackupPanel />
-    </n-card>
+    </div>
+
+    <!-- 解锁密码库 -->
+    <n-modal v-model:show="showUnlockVault" title="解锁密码库" preset="card" style="width: 340px">
+      <n-input v-model:value="unlockPwd" type="password" size="large" placeholder="输入主密码解锁" @keyup.enter="doUnlockVault" />
+      <div class="s-acts">
+        <n-button size="small" @click="showUnlockVault = false">取消</n-button>
+        <n-button size="small" type="primary" @click="doUnlockVault">解锁</n-button>
+      </div>
+    </n-modal>
+
+    <!-- 解锁 API -->
+    <n-modal v-model:show="showUnlockApi" title="解锁 API 密钥" preset="card" style="width: 340px">
+      <n-input v-model:value="unlockPwd" type="password" size="large" placeholder="输入主密码解锁" @keyup.enter="doUnlockApi" />
+      <div class="s-acts">
+        <n-button size="small" @click="showUnlockApi = false">取消</n-button>
+        <n-button size="small" type="primary" @click="doUnlockApi">解锁</n-button>
+      </div>
+    </n-modal>
 
     <!-- 修改主密码弹窗 -->
-    <n-modal v-model:show="showChangePwd" title="修改主密码" preset="card" style="width: 400px">
+    <n-modal v-model:show="showChangePwd" title="修改主密码" preset="card" style="width: 380px">
       <n-form label-placement="top">
         <n-form-item label="当前主密码">
-          <n-input v-model:value="currentPwd" type="password" />
+          <n-input v-model:value="currentPwd" type="password" size="small" />
         </n-form-item>
         <n-form-item label="新主密码">
-          <n-input v-model:value="newPwd" type="password" />
+          <n-input v-model:value="newPwd" type="password" size="small" />
         </n-form-item>
         <n-form-item label="确认新密码">
-          <n-input v-model:value="confirmPwd" type="password" />
+          <n-input v-model:value="confirmPwd" type="password" size="small" />
         </n-form-item>
       </n-form>
-      <div class="form-actions">
-        <n-button @click="showChangePwd = false">取消</n-button>
-        <n-button type="primary" @click="doChangePwd" :loading="changing">确认修改</n-button>
+      <div class="s-acts">
+        <n-button size="small" @click="showChangePwd = false">取消</n-button>
+        <n-button size="small" type="primary" @click="doChangePwd" :loading="changing">确认</n-button>
       </div>
     </n-modal>
   </div>
@@ -47,62 +88,79 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMessage } from 'naive-ui'
+import { useAppStore } from '../stores/app'
 import { useVaultStore } from '../stores/vault'
 import DeviceAuthList from '../components/DeviceAuthList.vue'
 import BackupPanel from '../components/BackupPanel.vue'
 
+const appStore = useAppStore()
 const vault = useVaultStore()
 const message = useMessage()
-
 const autoLock = ref(5)
-
 const showChangePwd = ref(false)
+const showUnlockVault = ref(false)
+const showUnlockApi = ref(false)
+const unlockPwd = ref('')
 const currentPwd = ref('')
 const newPwd = ref('')
 const confirmPwd = ref('')
 const changing = ref(false)
 
 const lockOptions = [
-  { label: '1 分钟', value: 1 },
-  { label: '5 分钟', value: 5 },
-  { label: '15 分钟', value: 15 },
-  { label: '30 分钟', value: 30 },
-  { label: '永不', value: 0 },
+  { label: '1分', value: 1 }, { label: '5分', value: 5 },
+  { label: '15分', value: 15 }, { label: '30分', value: 30 }, { label: '永不', value: 0 },
 ]
 
-async function doChangePwd() {
-  if (!currentPwd.value || !newPwd.value) {
-    message.warning('请填写完整')
-    return
+function doLockVault() {
+  if (window.confirm('锁定后需要输入主密码才能查看密码，确定继续？')) {
+    appStore.lockVault(); message.success('密码库已锁定')
   }
-  if (newPwd.value !== confirmPwd.value) {
-    message.warning('两次输入的新密码不一致')
-    return
-  }
-  if (currentPwd.value !== vault.masterPassword) {
-    message.error('当前主密码错误')
-    return
-  }
+}
 
+function doLockApi() {
+  if (window.confirm('锁定后需要输入主密码才能查看密钥，确定继续？')) {
+    appStore.lockApi(); message.success('API 密钥已锁定')
+  }
+}
+
+function doUnlockVault() {
+  if (unlockPwd.value === vault.masterPassword) {
+    appStore.unlockVault(); showUnlockVault.value = false; unlockPwd.value = ''
+    message.success('密码库已解锁')
+  } else {
+    message.error('主密码错误')
+  }
+}
+
+function doUnlockApi() {
+  if (unlockPwd.value === vault.masterPassword) {
+    appStore.unlockApi(); showUnlockApi.value = false; unlockPwd.value = ''
+    message.success('API 密钥已解锁')
+  } else {
+    message.error('主密码错误')
+  }
+}
+
+async function doChangePwd() {
+  if (!currentPwd.value || !newPwd.value) { message.warning('请填写完整'); return }
+  if (newPwd.value !== confirmPwd.value) { message.warning('两次密码不一致'); return }
+  if (currentPwd.value !== vault.masterPassword) { message.error('当前密码错误'); return }
   changing.value = true
   try {
-    vault.masterPassword = newPwd.value
-    await vault.saveToDisk()
-    message.success('主密码已修改')
-    showChangePwd.value = false
-    currentPwd.value = ''
-    newPwd.value = ''
-    confirmPwd.value = ''
-  } catch (e: any) {
-    message.error(String(e))
-  } finally {
-    changing.value = false
-  }
+    vault.masterPassword = newPwd.value; await vault.saveToDisk()
+    message.success('已修改'); showChangePwd.value = false
+    currentPwd.value = ''; newPwd.value = ''; confirmPwd.value = ''
+  } catch (e: any) { message.error(String(e)) }
+  finally { changing.value = false }
 }
 </script>
 
 <style scoped>
-.settings-view { padding: 24px; overflow-y: auto; height: 100vh; }
-.setting-card { background: transparent; }
-.form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.settings-view { padding: 16px 20px; overflow-y: auto; height: 100vh; font-size: 13px; }
+.s-title { font-size: 16px; font-weight: 700; color: var(--accent-red); }
+.s-group { padding: 4px 0; }
+.s-group-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.s-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.s-label { font-size: 13px; color: var(--text-secondary); min-width: 80px; }
+.s-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 </style>

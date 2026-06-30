@@ -1,46 +1,58 @@
 <template>
-  <n-card class="password-card" :bordered="true" hoverable>
-    <div class="card-header">
-      <span class="card-name">{{ entry.name }}</span>
-      <n-tag size="small" :bordered="false">{{ entry.category }}</n-tag>
-    </div>
-    <div class="card-body">
-      <div class="field">
-        <span class="label">账号</span>
-        <span class="value">{{ entry.username }}</span>
-        <n-button quaternary circle size="tiny" @click="copyText(entry.username)">
-          <template #icon><n-icon><CopyIcon /></n-icon></template>
-        </n-button>
-      </div>
-      <div class="field">
-        <span class="label">密码</span>
-        <span class="value">{{ showPassword ? entry.password : '••••••••' }}</span>
-        <n-button quaternary circle size="tiny" @click="showPassword = !showPassword">
-          <template #icon><n-icon>{{ showPassword ? EyeOffIcon : EyeIcon }}</n-icon></template>
-        </n-button>
-        <n-button quaternary circle size="tiny" @click="copyText(entry.password)">
-          <template #icon><n-icon><CopyIcon /></n-icon></template>
-        </n-button>
+  <div class="password-row" @click="$emit('edit', entry)">
+    <div class="row-left">
+      <div class="site-icon">{{ entry.name.charAt(0).toUpperCase() }}</div>
+      <div class="row-info">
+        <div class="row-name">{{ entry.name }}</div>
+        <div class="row-url">{{ entry.url || entry.username }}</div>
       </div>
     </div>
-    <div class="card-footer">
-      <span class="updated">更新于 {{ formatDate(entry.updated_at) }}</span>
-      <div class="actions">
-        <n-button size="tiny" quaternary @click="$emit('edit', entry)">编辑</n-button>
-        <n-button size="tiny" quaternary type="error" @click="$emit('delete', entry)">删除</n-button>
+    <div class="row-creds">
+      <div class="cred-item">
+        <span class="cred-label">账号</span>
+        <span class="cred-value">{{ entry.username }}</span>
+        <n-button quaternary circle size="tiny" @click.stop="copyText(entry.username)">
+          <template #icon><n-icon size="14"><CopyIcon /></n-icon></template>
+        </n-button>
+      </div>
+      <div class="cred-item">
+        <span class="cred-label">密码</span>
+        <span class="cred-value">{{ showPassword ? entry.password : '••••••••••••' }}</span>
+        <n-button quaternary circle size="tiny" @click.stop="showPassword = !showPassword">
+          <template #icon><n-icon size="14">{{ showPassword ? EyeOffIcon : EyeIcon }}</n-icon></template>
+        </n-button>
+        <n-button quaternary circle size="tiny" @click.stop="copyText(entry.password)">
+          <template #icon><n-icon size="14"><CopyIcon /></n-icon></template>
+        </n-button>
       </div>
     </div>
-  </n-card>
+    <div class="row-right">
+      <n-tag size="tiny" :bordered="false" class="cat-tag">{{ entry.category }}</n-tag>
+      <n-button-group size="tiny">
+        <n-button quaternary @click.stop="$emit('edit', entry)">
+          <template #icon><n-icon size="14"><EditIcon /></n-icon></template>
+        </n-button>
+        <n-button quaternary type="error" @click.stop="$emit('delete', entry)">
+          <template #icon><n-icon size="14"><DeleteIcon /></n-icon></template>
+        </n-button>
+      </n-button-group>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMessage } from 'naive-ui'
-import { Copy20Filled as CopyIcon } from '@vicons/fluent'
-import { Eye20Filled as EyeIcon, EyeOff20Filled as EyeOffIcon } from '@vicons/fluent'
+import {
+  Copy20Filled as CopyIcon,
+  Eye20Filled as EyeIcon,
+  EyeOff20Filled as EyeOffIcon,
+  Edit20Filled as EditIcon,
+  Delete20Filled as DeleteIcon,
+} from '@vicons/fluent'
 import type { VaultEntry } from '../stores/vault'
 
-const props = defineProps<{ entry: VaultEntry }>()
+defineProps<{ entry: VaultEntry }>()
 defineEmits<{ edit: [entry: VaultEntry]; delete: [entry: VaultEntry] }>()
 
 const showPassword = ref(false)
@@ -54,21 +66,109 @@ async function copyText(text: string) {
     message.error('复制失败')
   }
 }
-
-function formatDate(iso: string): string {
-  if (!iso) return ''
-  return iso.slice(0, 10)
-}
 </script>
 
 <style scoped>
-.password-card { background: var(--bg-card); border-color: var(--border); }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.card-name { font-size: 16px; font-weight: 600; }
-.field { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.label { color: var(--text-muted); font-size: 12px; min-width: 32px; }
-.value { flex: 1; font-family: monospace; font-size: 14px; color: var(--text-primary); }
-.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
-.updated { color: var(--text-muted); font-size: 12px; }
-.actions { display: flex; gap: 4px; }
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.password-row:hover {
+  border-color: var(--accent-red-glow);
+  background: rgba(220, 38, 38, 0.03);
+}
+.password-row:not(:last-child) {
+  border-bottom: none;
+  border-radius: 0;
+}
+.password-row:first-child {
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.password-row:last-child {
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.password-row:only-child {
+  border-radius: var(--radius-sm);
+}
+
+.row-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+.site-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-red), var(--accent-red-soft));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.row-info {
+  min-width: 0;
+}
+.row-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.row-url {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-creds {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  min-width: 0;
+}
+.cred-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+.cred-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.cred-value {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.cat-tag {
+  background: rgba(126, 200, 227, 0.1) !important;
+  color: var(--accent-blue) !important;
+}
 </style>
