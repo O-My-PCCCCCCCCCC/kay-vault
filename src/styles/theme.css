@@ -1,93 +1,69 @@
+/* ─── Arch Linux 终端主题 ─── */
 :root {
-  /* 背景 — 深蓝黑底（呼应千年制服深蓝） */
-  --bg-primary: #0b0f1c;
-  --bg-secondary: #111827;
-  --bg-card: #151d33;
+  --bg-primary: #0b0e14;
+  --bg-secondary: #0f131a;
+  --bg-card: #131821;
+  --bg-hover: rgba(152, 195, 121, 0.06);
 
-  /* 凯伊赤红瞳色 — 主强调色 */
-  --accent-red: #E63946;
-  --accent-red-soft: #B31D28;
-  --accent-red-glow: rgba(230, 57, 70, 0.12);
-  --accent-red-glow-strong: rgba(230, 57, 70, 0.25);
+  --accent: #98c379;
+  --accent-soft: #7aa85e;
+  --accent-glow: rgba(152, 195, 121, 0.12);
+  --accent-glow-strong: rgba(152, 195, 121, 0.2);
 
-  /* 千年制服蓝 — 辅助色 */
-  --accent-blue: #7ec8e3;
-  --accent-navy: #1e2d4a;
+  --red: #e06c75;
+  --blue: #61afef;
+  --cyan: #56b6c2;
+  --yellow: #e5c07b;
+  --purple: #c678dd;
+  --orange: #d19a66;
 
-  /* 银白 — 文字色（呼应凯伊的白发） */
-  --text-primary: #f0f0f0;
-  --text-secondary: #a0a8b8;
-  --text-muted: #6b7280;
+  --text-primary: #abb2bf;
+  --text-bright: #e5e7eb;
+  --text-secondary: #7f8a9a;
+  --text-muted: #4b5363;
 
-  /* 边框 */
-  --border: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(255, 255, 255, 0.1);
+  --border: rgba(171, 178, 191, 0.08);
+  --border-hover: rgba(171, 178, 191, 0.15);
 
-  --radius: 12px;
-  --radius-sm: 8px;
+  --radius: 0px;
+  --radius-sm: 0px;
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --font-mono: 'Consolas', 'Courier New', 'Fira Code', monospace;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   background: var(--bg-primary);
   color: var(--text-primary);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  font-size: 13px;
 }
 
-#app {
-  height: 100vh;
-}
+#app { height: 100vh; }
 
-/* Naive UI 全局暗色覆盖 */
-.n-card {
-  --n-color: var(--bg-card) !important;
-  --n-border-color: var(--border) !important;
-}
-
-/* 主按钮 — 凯伊赤红 + 微光晕 */
+/* Naive UI 覆盖 */
+.n-card        { --n-color: var(--bg-card) !important; --n-border-color: var(--border) !important; --n-border-radius: 0 !important; }
 .n-button--primary-type {
-  --n-color: var(--accent-red) !important;
-  --n-color-hover: #c62a36 !important;
-  --n-color-pressed: #B31D28 !important;
-  --n-text-color: #fff !important;
-  --n-text-color-hover: #fff !important;
-  --n-text-color-pressed: #fff !important;
-  --n-border: 1px solid transparent !important;
-  --n-border-hover: 1px solid transparent !important;
-  box-shadow: 0 2px 12px rgba(230, 57, 70, 0.25) !important;
-  transition: all 0.2s !important;
+  --n-color: var(--accent) !important;
+  --n-color-hover: #8bc473 !important;
+  --n-color-pressed: var(--accent-soft) !important;
+  --n-text-color: #0b0e14 !important;
+  --n-text-color-hover: #0b0e14 !important;
+  --n-border-radius: 0 !important;
 }
-.n-button--primary-type:hover {
-  box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35) !important;
-  transform: translateY(-1px);
-}
-
-/* 普通按钮 — 千年制服蓝边框 */
 .n-button--default-type {
-  --n-border: 1px solid rgba(255,255,255,0.1) !important;
-  --n-border-hover: 1px solid var(--accent-blue) !important;
-  --n-text-color-hover: var(--accent-blue) !important;
-  --n-color-hover: rgba(126, 200, 227, 0.06) !important;
-  transition: all 0.2s !important;
+  --n-border: 1px solid var(--border) !important;
+  --n-border-hover: 1px solid var(--accent) !important;
+  --n-text-color-hover: var(--accent) !important;
+  --n-color-hover: var(--bg-hover) !important;
+  --n-border-radius: 0 !important;
 }
-
-/* 错误按钮 — 删除等危险操作 */
-.n-button--error-type {
-  --n-color: transparent !important;
-  --n-color-hover: rgba(230, 57, 70, 0.08) !important;
-  --n-text-color: var(--text-muted) !important;
-  --n-text-color-hover: var(--accent-red) !important;
-  transition: all 0.2s !important;
-}
-.n-button--error-type:hover {
-  box-shadow: none !important;
-}
+.n-input         { --n-border-radius: 0 !important; --n-color: var(--bg-secondary) !important; --n-border: 1px solid var(--border) !important; }
+.n-input:focus   { --n-border: 1px solid var(--accent) !important; }
+.n-select        { --n-border-radius: 0 !important; }
+.n-modal         { --n-border-radius: 0 !important; }
+.n-card .n-card-header__title { font-family: var(--font-mono) !important; }

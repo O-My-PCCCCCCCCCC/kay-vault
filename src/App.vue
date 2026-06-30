@@ -56,15 +56,15 @@ function onMenuChange(key: string) {
 <style scoped>
 .app-layout { height: 100vh; }
 .sider {
-  background: linear-gradient(180deg, #0d1321 0%, #0f1728 100%) !important;
-  border-right: 1px solid rgba(230, 57, 70, 0.08) !important;
+  background: #0b0e14 !important;
+  border-right: 1px solid rgba(152, 195, 121, 0.1) !important;
 }
 .sider-header {
-  padding: 18px 16px 14px;
-  font-size: 16px;
-  font-weight: 700;
-  color: #E63946;
-  letter-spacing: 1px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
 }
 </style>
