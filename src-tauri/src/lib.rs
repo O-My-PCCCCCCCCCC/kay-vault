@@ -54,6 +54,40 @@ fn config_save(cfg: config::AppConfig) -> Result<(), String> {
     config::save_config(path.to_str().unwrap(), &cfg)
 }
 
+#[tauri::command]
+fn auth_generate_key(usb_path: String) -> Result<String, String> {
+    auth::generate_device_key(&usb_path)
+}
+
+#[tauri::command]
+fn auth_list_devices(usb_path: String) -> Result<Vec<String>, String> {
+    auth::list_authorized_devices(&usb_path)
+}
+
+#[tauri::command]
+fn auth_check(usb_path: String) -> Result<bool, String> {
+    auth::is_device_authorized(&usb_path)
+}
+
+#[tauri::command]
+fn auth_remove(usb_path: String, device_name: String) -> Result<(), String> {
+    auth::remove_device_auth(&usb_path, &device_name)
+}
+
+#[tauri::command]
+fn backup_now(usb_path: String) -> Result<String, String> {
+    let vault_path = vault_path();
+    let vault_str = vault_path.to_str().unwrap();
+    backup::backup_vault(vault_str, &usb_path)
+}
+
+#[tauri::command]
+fn restore_from_usb(usb_path: String, filename: Option<String>) -> Result<(), String> {
+    let vault_path = vault_path();
+    let vault_str = vault_path.to_str().unwrap();
+    backup::restore_vault(&usb_path, vault_str, filename.as_deref())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -63,6 +97,12 @@ pub fn run() {
             vault_save,
             config_load,
             config_save,
+            auth_generate_key,
+            auth_list_devices,
+            auth_check,
+            auth_remove,
+            backup_now,
+            restore_from_usb,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
