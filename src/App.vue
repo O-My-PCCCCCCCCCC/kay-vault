@@ -76,8 +76,10 @@ async function refreshStats() {
   catch { }
 }
 
-watch(() => appStore.unlocked, (v) => { if (v) refreshStats() })
+watch(() => appStore.unlocked, (v) => { if (v) { refreshStats(); console.log('stats: unlocked') } })
 router.afterEach(() => refreshStats())
+// 初始加载
+refreshStats()
 </script>
 
 <style scoped>

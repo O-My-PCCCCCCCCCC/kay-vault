@@ -102,17 +102,16 @@ fn get_stats(password: String) -> Result<serde_json::Value, String> {
 
 fn get_disk_info() -> (u64, u64) {
     #[cfg(windows)] {
-        let out = std::process::Command::new("wmic")
-            .args(["logicaldisk", "where", "DeviceID='C:'", "get", "Size,FreeSpace", "/format:csv"])
+        let out = std::process::Command::new("powershell")
+            .args(["-Command", "Get-PSDrive C | Select-Object Used,Free | ConvertTo-Json"])
             .output().ok();
         if let Some(o) = out {
-            for line in String::from_utf8_lossy(&o.stdout).lines().skip(1) {
-                let parts: Vec<&str> = line.split(',').collect();
-                if parts.len() >= 3 {
-                    let free = parts[1].trim().parse::<u64>().unwrap_or(0);
-                    let total = parts[2].trim().parse::<u64>().unwrap_or(0);
-                    if total > 0 { return (total, free); }
-                }
+            let s = String::from_utf8_lossy(&o.stdout);
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&s) {
+                let used = v["Used"].as_u64().unwrap_or(0);
+                let free = v["Free"].as_u64().unwrap_or(0);
+                let total = used + free;
+                if total > 0 { return (total, free); }
             }
         }
         (0, 0)
