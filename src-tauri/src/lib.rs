@@ -72,6 +72,67 @@ fn restore_from_usb(filename: Option<String>) -> Result<(), String> {
 #[tauri::command]
 fn list_backups() -> Result<Vec<String>, String> { backup::list_backups() }
 
+/// 系统统计
+#[tauri::command]
+fn get_stats(password: String) -> Result<serde_json::Value, String> {
+    let vp = vault_path();
+    let password_count = if vp.exists() {
+        match vault::load_vault(vp.to_str().unwrap(), &password) {
+            Ok(v) => v.entries.len(), Err(_) => 0,
+        }
+    } else { 0 };
+
+    let api_count = match api_keys::load_keys(&password) {
+        Ok(keys) => keys.len(), Err(_) => 0,
+    };
+
+    let (disk_total, disk_avail) = get_disk_info();
+    let disk_used = disk_total.saturating_sub(disk_avail);
+    let disk_percent = if disk_total > 0 { (disk_used as f64 / disk_total as f64 * 100.0).round() as u64 } else { 0 };
+
+    Ok(serde_json::json!({
+        "password_count": password_count,
+        "api_count": api_count,
+        "disk_total": disk_total,
+        "disk_avail": disk_avail,
+        "disk_used": disk_used,
+        "disk_percent": disk_percent,
+    }))
+}
+
+fn get_disk_info() -> (u64, u64) {
+    #[cfg(windows)] {
+        let out = std::process::Command::new("wmic")
+            .args(["logicaldisk", "where", "DeviceID='C:'", "get", "Size,FreeSpace", "/format:csv"])
+            .output().ok();
+        if let Some(o) = out {
+            for line in String::from_utf8_lossy(&o.stdout).lines().skip(1) {
+                let parts: Vec<&str> = line.split(',').collect();
+                if parts.len() >= 3 {
+                    let free = parts[1].trim().parse::<u64>().unwrap_or(0);
+                    let total = parts[2].trim().parse::<u64>().unwrap_or(0);
+                    if total > 0 { return (total, free); }
+                }
+            }
+        }
+        (0, 0)
+    }
+    #[cfg(not(windows))] {
+        let out = std::process::Command::new("df").args(["-B1", "/"]).output().ok();
+        if let Some(o) = out {
+            for line in String::from_utf8_lossy(&o.stdout).lines().skip(1) {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 4 {
+                    let total = parts[1].parse::<u64>().unwrap_or(0);
+                    let avail = parts[3].parse::<u64>().unwrap_or(0);
+                    if total > 0 { return (total, avail); }
+                }
+            }
+        }
+        (0, 0)
+    }
+}
+
 /// API Keys
 #[tauri::command]
 fn api_keys_load(password: String) -> Result<Vec<api_keys::ApiKey>, String> {
@@ -81,6 +142,24 @@ fn api_keys_load(password: String) -> Result<Vec<api_keys::ApiKey>, String> {
 #[tauri::command]
 fn api_keys_save(keys: Vec<api_keys::ApiKey>, password: String) -> Result<(), String> {
     api_keys::save_keys(&keys, &password)
+}
+
+/// 打开 URL
+#[tauri::command]
+fn open_url(url: String) -> Result<(), String> {
+    let u = url.trim();
+    if !u.starts_with("http://") && !u.starts_with("https://") {
+        return Err("URL 必须以 http:// 或 https:// 开头".into());
+    }
+    #[cfg(target_os = "windows")] {
+        std::process::Command::new("cmd").args(["/c", "start", u]).spawn()
+            .map_err(|e| format!("打开失败: {}", e))?;
+    }
+    #[cfg(target_os = "linux")] {
+        std::process::Command::new("xdg-open").arg(u).spawn()
+            .map_err(|e| format!("打开失败: {}", e))?;
+    }
+    Ok(())
 }
 
 /// SHA-PIN 密码生成
@@ -100,7 +179,7 @@ pub fn run() {
             greet, vault_load, vault_save, config_load, config_save,
             auth_generate_key, auth_check, auth_remove,
             backup_now, restore_from_usb, list_backups,
-            api_keys_load, api_keys_save, sha_pin_run,
+            api_keys_load, api_keys_save, get_stats, sha_pin_run, open_url,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
