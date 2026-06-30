@@ -6,6 +6,7 @@ mod config;
 mod api_keys;
 pub mod sha_pin;
 
+use tauri::Manager;
 use std::path::PathBuf;
 
 fn vault_path() -> PathBuf {
@@ -186,6 +187,11 @@ pub fn run() {
                     tauri_plugin_log::Builder::default().level(log::LevelFilter::Info).build(),
                 )?;
             }
+            app.handle().plugin(
+                tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+                    let _ = app.get_webview_window("main").map(|w| w.set_focus());
+                }),
+            )?;
             Ok(())
         })
         .run(tauri::generate_context!())
