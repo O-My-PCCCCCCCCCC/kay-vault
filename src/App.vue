@@ -51,7 +51,7 @@ const stats = ref({ password_count: 0, api_count: 0, disk_total: 0, disk_avail: 
 const menuOptions = [
   { label: '🔑 我的密码', key: 'vault' },
   { label: '🔐 API 密钥', key: 'api-keys' },
-  { label: '💻 终端', key: 'terminal' },
+  { label: '🎲 PIN生成器', key: 'terminal' },
   { label: '⚙️ 设置', key: 'settings' },
 ]
 

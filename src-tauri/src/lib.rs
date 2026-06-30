@@ -3,6 +3,8 @@ mod vault;
 mod auth;
 mod backup;
 mod config;
+mod api_keys;
+pub mod sha_pin;
 
 use std::path::PathBuf;
 
@@ -21,16 +23,12 @@ fn config_path() -> PathBuf {
 }
 
 #[tauri::command]
-fn greet() -> String {
-    "凯伊密码管家已就绪".into()
-}
+fn greet() -> String { "凯伊密码管家已就绪".into() }
 
 #[tauri::command]
 fn vault_load(password: String) -> Result<Vec<vault::VaultEntry>, String> {
     let path = vault_path();
-    if !path.exists() {
-        return Ok(Vec::new()); // 首次使用，返回空库
-    }
+    if !path.exists() { return Ok(Vec::new()); }
     let vault_file = vault::load_vault(path.to_str().unwrap(), &password)?;
     Ok(vault_file.entries)
 }
@@ -55,61 +53,59 @@ fn config_save(cfg: config::AppConfig) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn auth_generate_key() -> Result<(), String> {
-    auth::generate_key()
-}
-
+fn auth_generate_key() -> Result<(), String> { auth::generate_key() }
 #[tauri::command]
-fn auth_check() -> bool {
-    auth::is_authorized()
-}
-
+fn auth_check() -> bool { auth::is_authorized() }
 #[tauri::command]
-fn auth_remove() -> Result<(), String> {
-    auth::remove_auth()
-}
+fn auth_remove() -> Result<(), String> { auth::remove_auth() }
 
 #[tauri::command]
 fn backup_now() -> Result<String, String> {
-    let vault_path = vault_path();
-    let vault_str = vault_path.to_str().unwrap();
-    backup::backup_vault(vault_str)
+    backup::backup_vault(vault_path().to_str().unwrap())
 }
 
 #[tauri::command]
 fn restore_from_usb(filename: Option<String>) -> Result<(), String> {
-    let vault_path = vault_path();
-    let vault_str = vault_path.to_str().unwrap();
-    backup::restore_vault(vault_str, filename.as_deref())
+    backup::restore_vault(vault_path().to_str().unwrap(), filename.as_deref())
 }
 
 #[tauri::command]
-fn list_backups() -> Result<Vec<String>, String> {
-    backup::list_backups()
+fn list_backups() -> Result<Vec<String>, String> { backup::list_backups() }
+
+/// API Keys
+#[tauri::command]
+fn api_keys_load(password: String) -> Result<Vec<api_keys::ApiKey>, String> {
+    api_keys::load_keys(&password)
+}
+
+#[tauri::command]
+fn api_keys_save(keys: Vec<api_keys::ApiKey>, password: String) -> Result<(), String> {
+    api_keys::save_keys(&keys, &password)
+}
+
+/// SHA-PIN 密码生成
+#[tauri::command]
+fn sha_pin_run(input1: String, input2: String, password_len: usize) -> Result<serde_json::Value, String> {
+    let len = match password_len { 4 | 6 | 8 => password_len, _ => 6 };
+    let result = sha_pin::compute_with_len(&input1, &input2, len)?;
+    Ok(serde_json::json!({
+        "forward_result": result.0, "reverse_result": result.1, "final_password": result.2,
+    }))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            greet,
-            vault_load,
-            vault_save,
-            config_load,
-            config_save,
-            auth_generate_key,
-            auth_check,
-            auth_remove,
-            backup_now,
-            restore_from_usb,
-            list_backups,
+            greet, vault_load, vault_save, config_load, config_save,
+            auth_generate_key, auth_check, auth_remove,
+            backup_now, restore_from_usb, list_backups,
+            api_keys_load, api_keys_save, sha_pin_run,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
+                    tauri_plugin_log::Builder::default().level(log::LevelFilter::Info).build(),
                 )?;
             }
             Ok(())
