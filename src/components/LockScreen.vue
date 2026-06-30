@@ -9,12 +9,21 @@
         type="password"
         placeholder="输入主密码"
         size="large"
-        :input-props="{ autofocus: true }"
+        :disabled="loading"
         @keyup.enter="unlock"
       />
-      <n-button type="primary" size="large" block style="margin-top: 16px;" @click="unlock">
+      <n-button
+        type="primary"
+        size="large"
+        block
+        style="margin-top: 16px"
+        :loading="loading"
+        @click="unlock"
+      >
         用钥匙打开
       </n-button>
+      <p v-if="errorMsg" class="error">{{ errorMsg }}</p>
+      <p class="hint">首次使用？输入任意密码即可创建密码库</p>
     </div>
   </div>
 </template>
@@ -22,13 +31,26 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAppStore } from '../stores/app'
+import { useVaultStore } from '../stores/vault'
 
 const appStore = useAppStore()
-const password = ref('')
+const vault = useVaultStore()
 
-function unlock() {
-  if (password.value) {
+const password = ref('')
+const loading = ref(false)
+const errorMsg = ref('')
+
+async function unlock() {
+  if (!password.value) return
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    await vault.loadFromDisk(password.value)
     appStore.unlocked = true
+  } catch {
+    errorMsg.value = '主密码错误或密码库损坏'
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -57,5 +79,15 @@ function unlock() {
   color: var(--text-secondary);
   margin: 8px 0 24px;
   font-size: 14px;
+}
+.error {
+  color: var(--accent-red);
+  margin-top: 12px;
+  font-size: 13px;
+}
+.hint {
+  color: var(--text-muted);
+  margin-top: 16px;
+  font-size: 12px;
 }
 </style>

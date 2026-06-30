@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 
 export interface VaultEntry {
   id: string
@@ -19,6 +20,7 @@ export const useVaultStore = defineStore('vault', () => {
   const searchQuery = ref('')
   const selectedCategory = ref('全部')
   const masterPassword = ref('')
+  const error = ref('')
 
   const filteredEntries = computed(() => {
     let result = entries.value
@@ -41,24 +43,50 @@ export const useVaultStore = defineStore('vault', () => {
     return ['全部', ...cats]
   })
 
-  function addEntry(entry: VaultEntry) {
-    entries.value.push(entry)
-  }
-
-  function updateEntry(updated: VaultEntry) {
-    const idx = entries.value.findIndex(e => e.id === updated.id)
-    if (idx !== -1) {
-      entries.value[idx] = updated
+  async function loadFromDisk(password: string) {
+    loading.value = true
+    error.value = ''
+    try {
+      masterPassword.value = password
+      const data = await invoke<VaultEntry[]>('vault_load', { password })
+      entries.value = data || []
+    } catch (e: any) {
+      error.value = String(e)
+      throw e
+    } finally {
+      loading.value = false
     }
   }
 
-  function deleteEntry(id: string) {
+  async function saveToDisk() {
+    if (!masterPassword.value) return
+    await invoke('vault_save', {
+      entries: entries.value,
+      password: masterPassword.value,
+    })
+  }
+
+  async function addEntry(entry: VaultEntry) {
+    entries.value.push(entry)
+    await saveToDisk()
+  }
+
+  async function updateEntry(updated: VaultEntry) {
+    const idx = entries.value.findIndex(e => e.id === updated.id)
+    if (idx !== -1) {
+      entries.value[idx] = updated
+      await saveToDisk()
+    }
+  }
+
+  async function deleteEntry(id: string) {
     entries.value = entries.value.filter(e => e.id !== id)
+    await saveToDisk()
   }
 
   return {
-    entries, loading, searchQuery, selectedCategory, masterPassword,
+    entries, loading, searchQuery, selectedCategory, masterPassword, error,
     filteredEntries, categories,
-    addEntry, updateEntry, deleteEntry,
+    loadFromDisk, saveToDisk, addEntry, updateEntry, deleteEntry,
   }
 })
