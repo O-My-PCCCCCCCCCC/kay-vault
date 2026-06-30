@@ -55,37 +55,37 @@ fn config_save(cfg: config::AppConfig) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn auth_generate_key(usb_path: String) -> Result<String, String> {
-    auth::generate_device_key(&usb_path)
+fn auth_generate_key() -> Result<(), String> {
+    auth::generate_key()
 }
 
 #[tauri::command]
-fn auth_list_devices(usb_path: String) -> Result<Vec<String>, String> {
-    auth::list_authorized_devices(&usb_path)
+fn auth_check() -> bool {
+    auth::is_authorized()
 }
 
 #[tauri::command]
-fn auth_check(usb_path: String) -> Result<bool, String> {
-    auth::is_device_authorized(&usb_path)
+fn auth_remove() -> Result<(), String> {
+    auth::remove_auth()
 }
 
 #[tauri::command]
-fn auth_remove(usb_path: String, device_name: String) -> Result<(), String> {
-    auth::remove_device_auth(&usb_path, &device_name)
-}
-
-#[tauri::command]
-fn backup_now(usb_path: String) -> Result<String, String> {
+fn backup_now() -> Result<String, String> {
     let vault_path = vault_path();
     let vault_str = vault_path.to_str().unwrap();
-    backup::backup_vault(vault_str, &usb_path)
+    backup::backup_vault(vault_str)
 }
 
 #[tauri::command]
-fn restore_from_usb(usb_path: String, filename: Option<String>) -> Result<(), String> {
+fn restore_from_usb(filename: Option<String>) -> Result<(), String> {
     let vault_path = vault_path();
     let vault_str = vault_path.to_str().unwrap();
-    backup::restore_vault(&usb_path, vault_str, filename.as_deref())
+    backup::restore_vault(vault_str, filename.as_deref())
+}
+
+#[tauri::command]
+fn list_backups() -> Result<Vec<String>, String> {
+    backup::list_backups()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -98,11 +98,11 @@ pub fn run() {
             config_load,
             config_save,
             auth_generate_key,
-            auth_list_devices,
             auth_check,
             auth_remove,
             backup_now,
             restore_from_usb,
+            list_backups,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

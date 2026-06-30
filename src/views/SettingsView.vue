@@ -14,13 +14,13 @@
     <n-divider />
 
     <n-card title="设备认证" :bordered="false" class="setting-card">
-      <DeviceAuthList :usb-path="usbPath" :usb-inserted="usbInserted" />
+      <DeviceAuthList />
     </n-card>
 
     <n-divider />
 
     <n-card title="备份与还原" :bordered="false" class="setting-card">
-      <BackupPanel :usb-path="usbPath" :usb-inserted="usbInserted" />
+      <BackupPanel />
     </n-card>
 
     <!-- 修改主密码弹窗 -->
@@ -54,8 +54,6 @@ import BackupPanel from '../components/BackupPanel.vue'
 const vault = useVaultStore()
 const message = useMessage()
 
-const usbPath = ref('D:\\')
-const usbInserted = ref(true)
 const autoLock = ref(5)
 
 const showChangePwd = ref(false)
