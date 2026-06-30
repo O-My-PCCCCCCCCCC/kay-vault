@@ -4,37 +4,66 @@ mod auth;
 mod backup;
 mod config;
 
+use std::path::PathBuf;
+
+fn vault_path() -> PathBuf {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    PathBuf::from(home).join(".key-vault").join("vault.enc")
+}
+
+fn config_path() -> PathBuf {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    PathBuf::from(home).join(".key-vault").join("config.json")
+}
+
 #[tauri::command]
 fn greet() -> String {
     "凯伊密码管家已就绪".into()
 }
 
 #[tauri::command]
-fn crypto_encrypt(plaintext: Vec<u8>, password: String) -> Vec<u8> {
-    let salt = crypto::generate_salt();
-    let key = crypto::derive_key(&password, &salt);
-    let encrypted = crypto::encrypt(&plaintext, &key);
-    // 返回 salt(32B) + encrypted
-    let mut result = Vec::with_capacity(32 + encrypted.len());
-    result.extend_from_slice(&salt);
-    result.extend_from_slice(&encrypted);
-    result
+fn vault_load(password: String) -> Result<Vec<vault::VaultEntry>, String> {
+    let path = vault_path();
+    if !path.exists() {
+        return Ok(Vec::new()); // 首次使用，返回空库
+    }
+    let vault_file = vault::load_vault(path.to_str().unwrap(), &password)?;
+    Ok(vault_file.entries)
 }
 
 #[tauri::command]
-fn crypto_decrypt(data: Vec<u8>, password: String) -> Result<Vec<u8>, String> {
-    if data.len() < 32 {
-        return Err("数据损坏".into());
-    }
-    let (salt, encrypted) = data.split_at(32);
-    let key = crypto::derive_key(&password, salt);
-    crypto::decrypt(encrypted, &key)
+fn vault_save(entries: Vec<vault::VaultEntry>, password: String) -> Result<(), String> {
+    let path = vault_path();
+    let vault_file = vault::VaultFile { entries };
+    vault::save_vault(path.to_str().unwrap(), &vault_file, &password)
+}
+
+#[tauri::command]
+fn config_load() -> config::AppConfig {
+    let path = config_path();
+    config::load_config(path.to_str().unwrap())
+}
+
+#[tauri::command]
+fn config_save(cfg: config::AppConfig) -> Result<(), String> {
+    let path = config_path();
+    config::save_config(path.to_str().unwrap(), &cfg)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, crypto_encrypt, crypto_decrypt])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            vault_load,
+            vault_save,
+            config_load,
+            config_save,
+        ])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
