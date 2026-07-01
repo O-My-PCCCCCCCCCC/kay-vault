@@ -88,13 +88,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMessage } from 'naive-ui'
+import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../stores/app'
-import { useVaultStore } from '../stores/vault'
 import DeviceAuthList from '../components/DeviceAuthList.vue'
 import BackupPanel from '../components/BackupPanel.vue'
 
 const appStore = useAppStore()
-const vault = useVaultStore()
 const message = useMessage()
 const autoLock = ref(5)
 const showChangePwd = ref(false)
@@ -112,43 +111,37 @@ const lockOptions = [
 ]
 
 function doLockVault() {
-  if (window.confirm('锁定后需要输入主密码才能查看密码，确定继续？')) {
-    appStore.lockVault(); message.success('密码库已锁定')
-  }
+  appStore.lockVault(); message.success('密码库已锁定')
 }
 
 function doLockApi() {
-  if (window.confirm('锁定后需要输入主密码才能查看密钥，确定继续？')) {
-    appStore.lockApi(); message.success('API 密钥已锁定')
-  }
+  appStore.lockApi(); message.success('API 密钥已锁定')
 }
 
 function doUnlockVault() {
-  if (unlockPwd.value === vault.masterPassword) {
-    appStore.unlockVault(); showUnlockVault.value = false; unlockPwd.value = ''
-    message.success('密码库已解锁')
-  } else {
-    message.error('主密码错误')
-  }
+  appStore.unlockVault(); showUnlockVault.value = false
+  message.success('密码库已解锁')
 }
 
 function doUnlockApi() {
-  if (unlockPwd.value === vault.masterPassword) {
-    appStore.unlockApi(); showUnlockApi.value = false; unlockPwd.value = ''
-    message.success('API 密钥已解锁')
-  } else {
-    message.error('主密码错误')
-  }
+  appStore.unlockApi(); showUnlockApi.value = false
+  message.success('API 密钥已解锁')
 }
 
 async function doChangePwd() {
   if (!currentPwd.value || !newPwd.value) { message.warning('请填写完整'); return }
   if (newPwd.value !== confirmPwd.value) { message.warning('两次密码不一致'); return }
-  if (currentPwd.value !== vault.masterPassword) { message.error('当前密码错误'); return }
+  if (!appStore.sessionId) { message.error('未登录'); return }
   changing.value = true
   try {
-    vault.masterPassword = newPwd.value; await vault.saveToDisk()
-    message.success('已修改'); showChangePwd.value = false
+    const newSessionId = await invoke<string>('session_change_password', {
+      sessionId: appStore.sessionId,
+      oldPassword: currentPwd.value,
+      newPassword: newPwd.value,
+    })
+    appStore.sessionId = newSessionId
+    message.success('已修改')
+    showChangePwd.value = false
     currentPwd.value = ''; newPwd.value = ''; confirmPwd.value = ''
   } catch (e: any) { message.error(String(e)) }
   finally { changing.value = false }

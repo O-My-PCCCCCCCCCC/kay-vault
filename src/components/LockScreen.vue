@@ -4,12 +4,17 @@
       <div class="logo">🔑</div>
       <h2>凯伊密码管家</h2>
       <p class="subtitle">插入钥匙以继续</p>
+      <div class="warning-banner">
+        ⚠️ 请妥善保管主密码和备份文件<br>
+        主密码丢失后加密数据无法找回
+      </div>
       <n-input
         v-model:value="password"
         type="password"
         placeholder="输入主密码"
         size="large"
         :disabled="loading"
+        :input-props="{ autocomplete: 'off', spellcheck: 'false', style: 'ime-mode: disabled' }"
         @keyup.enter="unlock"
       />
       <n-button
@@ -45,10 +50,11 @@ async function unlock() {
   loading.value = true
   errorMsg.value = ''
   try {
-    await vault.loadFromDisk(password.value)
-    appStore.unlocked = true
-  } catch {
-    errorMsg.value = '主密码错误或密码库损坏'
+    await appStore.login(password.value)
+    await vault.loadFromDisk()
+  } catch (e: any) {
+    errorMsg.value = String(e) || '主密码错误'
+    appStore.unlocked = false
   } finally {
     loading.value = false
   }
@@ -79,6 +85,17 @@ async function unlock() {
   color: var(--text-secondary);
   margin: 8px 0 24px;
   font-size: 14px;
+}
+.warning-banner {
+  background: rgba(230, 57, 70, 0.08);
+  border: 1px solid rgba(230, 57, 70, 0.25);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--accent-red);
+  line-height: 1.6;
+  text-align: left;
 }
 .error {
   color: var(--accent-red);

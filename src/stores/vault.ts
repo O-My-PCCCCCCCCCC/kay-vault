@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useAppStore } from './app'
 
 export interface VaultEntry {
   id: string
@@ -19,7 +20,6 @@ export const useVaultStore = defineStore('vault', () => {
   const entries = ref<VaultEntry[]>([])
   const loading = ref(false)
   const searchQuery = ref('')
-  const masterPassword = ref('')
   const error = ref('')
 
   const filteredEntries = computed(() => {
@@ -37,7 +37,6 @@ export const useVaultStore = defineStore('vault', () => {
 
   // 按分组 → 分类 分组的树结构
   const treeData = computed(() => {
-    // 先按 group 分组
     const groupMap = new Map<string, Map<string, VaultEntry[]>>()
     for (const entry of filteredEntries.value) {
       const g = entry.group || '默认分组'
@@ -47,8 +46,6 @@ export const useVaultStore = defineStore('vault', () => {
       if (!catMap.has(c)) catMap.set(c, [])
       catMap.get(c)!.push(entry)
     }
-
-    // 转成树结构
     return Array.from(groupMap.entries()).map(([group, catMap]) => ({
       group,
       categories: Array.from(catMap.entries()).map(([category, items]) => ({
@@ -58,12 +55,13 @@ export const useVaultStore = defineStore('vault', () => {
     }))
   })
 
-  async function loadFromDisk(password: string) {
+  async function loadFromDisk() {
+    const app = useAppStore()
+    if (!app.sessionId) throw new Error('未登录')
     loading.value = true
     error.value = ''
     try {
-      masterPassword.value = password
-      const data = await invoke<VaultEntry[]>('vault_load', { password })
+      const data = await invoke<VaultEntry[]>('vault_load', { sessionId: app.sessionId })
       entries.value = data || []
     } catch (e: any) {
       error.value = String(e)
@@ -74,10 +72,11 @@ export const useVaultStore = defineStore('vault', () => {
   }
 
   async function saveToDisk() {
-    if (!masterPassword.value) return
+    const app = useAppStore()
+    if (!app.sessionId) return
     await invoke('vault_save', {
       entries: entries.value,
-      password: masterPassword.value,
+      sessionId: app.sessionId,
     })
   }
 
@@ -100,7 +99,7 @@ export const useVaultStore = defineStore('vault', () => {
   }
 
   return {
-    entries, loading, searchQuery, masterPassword, error,
+    entries, loading, searchQuery, error,
     filteredEntries, treeData,
     loadFromDisk, saveToDisk, addEntry, updateEntry, deleteEntry,
   }

@@ -43,10 +43,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useMessage } from 'naive-ui'
-import { useVaultStore } from '../stores/vault'
+import { useAppStore } from '../stores/app'
 
 interface AK { name: string; key: string; provider: string; base_url: string; created_at: string }
-const vault = useVaultStore()
+const app = useAppStore()
 const msg = useMessage()
 
 const keys = ref<AK[]>([]), q = ref(''), loading = ref(false), sk = ref<number|null>(null)
@@ -68,8 +68,8 @@ const items = computed(() => { if (sv.value==='all') return filtered.value; for 
 function idx(k: AK) { return keys.value.indexOf(k) }
 function mask(k: string) { if (!k||k.length<=8) return '••••••••'; return k.slice(0,4)+'••••'+k.slice(-4) }
 function ts(i: number) { sk.value = sk.value === i ? null : i }
-async function load() { if (!vault.masterPassword) return; loading.value=true; try { keys.value = await invoke<AK[]>('api_keys_load',{password:vault.masterPassword}) } catch{} finally{loading.value=false} }
-async function saveAll() { await invoke('api_keys_save',{keys:keys.value,password:vault.masterPassword}) }
+async function load() { if (!app.sessionId) return; loading.value=true; try { keys.value = await invoke<AK[]>('api_keys_load',{sessionId:app.sessionId}) } catch{} finally{loading.value=false} }
+async function saveAll() { if (!app.sessionId) return; await invoke('api_keys_save',{keys:keys.value,sessionId:app.sessionId}) }
 function add() { ei.value=-1; f.name=''; f.key=''; f.provider=''; f.base_url=''; fm.value=true }
 function edit(i: number) { const k = items.value[i]; const idx = keys.value.indexOf(k); ei.value=idx; f.name=k.name; f.key=k.key; f.provider=k.provider; f.base_url=k.base_url; fm.value=true }
 function save() { if (!f.name||!f.key) { msg.warning('请填写完整'); return }; const e: AK = { name:f.name, key:f.key, provider:f.provider||'自定义', base_url:f.base_url||du.value, created_at:new Date().toISOString() }; if (ei.value>=0) { keys.value[ei.value] = {...e, created_at: keys.value[ei.value].created_at} } else { keys.value.push(e) }; saveAll().then(()=>{msg.success('已保存');fm.value=false}) }

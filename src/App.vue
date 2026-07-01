@@ -48,16 +48,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { darkTheme, zhCN, dateZhCN } from 'naive-ui'
 import { invoke } from '@tauri-apps/api/core'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useAppStore } from './stores/app'
-import { useVaultStore } from './stores/vault'
 import LockScreen from './components/LockScreen.vue'
 
 const appStore = useAppStore()
-const vaultStore = useVaultStore()
 const router = useRouter()
 const route = useRoute()
 const activeKey = ref((route.name as string) || 'vault')
@@ -83,9 +82,9 @@ function fmtSize(bytes: number): string {
 }
 
 async function refreshStats() {
-  if (!vaultStore.masterPassword) return
+  if (!appStore.sessionId) return
   try {
-    stats.value = await invoke('get_stats', { password: vaultStore.masterPassword })
+    stats.value = await invoke('get_stats', { sessionId: appStore.sessionId })
   } catch {
     // 忽略，下次切换页面时再试
   }
@@ -99,8 +98,19 @@ function pctApp() { return pct(stats.value.app_data_bytes) }
 function pctPwd() { return pct(stats.value.password_data_bytes) }
 function pctFree() { return pct(stats.value.disk_avail) }
 
-watch(() => appStore.unlocked, (v) => { if (v) refreshStats() })
+// 防截屏：解锁后保护窗口内容，锁定后解除
+async function setScreenshotProtection(protect: boolean) {
+  try { await getCurrentWindow().setContentProtected(protect) } catch { /* 忽略 */ }
+}
+
+watch(() => appStore.unlocked, async (v) => {
+  await setScreenshotProtection(v)
+  if (v) refreshStats()
+})
+
 router.afterEach(() => refreshStats())
+
+onMounted(() => { if (appStore.unlocked) setScreenshotProtection(true) })
 
 const menuOptions = [
   { label: '🔑 我的密码', key: 'vault' },

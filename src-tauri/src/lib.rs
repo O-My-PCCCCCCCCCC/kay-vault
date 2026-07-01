@@ -5,11 +5,12 @@ mod backup;
 mod config;
 mod api_keys;
 pub mod sha_pin;
+mod session;
 
 use tauri::Manager;
 use std::path::PathBuf;
 
-fn vault_path() -> PathBuf {
+pub fn vault_path() -> PathBuf {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .unwrap_or_else(|_| ".".into());
@@ -27,18 +28,20 @@ fn config_path() -> PathBuf {
 fn greet() -> String { "凯伊密码管家已就绪".into() }
 
 #[tauri::command]
-fn vault_load(password: String) -> Result<Vec<vault::VaultEntry>, String> {
+fn vault_load(session_id: String, state: tauri::State<'_, session::SessionManager>) -> Result<Vec<vault::VaultEntry>, String> {
+    let key = state.get_key(&session_id).ok_or("未登录或会话已过期")?;
     let path = vault_path();
     if !path.exists() { return Ok(Vec::new()); }
-    let vault_file = vault::load_vault(path.to_str().unwrap(), &password)?;
+    let vault_file = vault::load_vault(path.to_str().unwrap(), &key)?;
     Ok(vault_file.entries)
 }
 
 #[tauri::command]
-fn vault_save(entries: Vec<vault::VaultEntry>, password: String) -> Result<(), String> {
+fn vault_save(entries: Vec<vault::VaultEntry>, session_id: String, state: tauri::State<'_, session::SessionManager>) -> Result<(), String> {
+    let key = state.get_key(&session_id).ok_or("未登录或会话已过期")?;
     let path = vault_path();
     let vault_file = vault::VaultFile { entries };
-    vault::save_vault(path.to_str().unwrap(), &vault_file, &password)
+    vault::save_vault(path.to_str().unwrap(), &vault_file, &key)
 }
 
 #[tauri::command]
@@ -75,15 +78,22 @@ fn list_backups() -> Result<Vec<String>, String> { backup::list_backups() }
 
 /// 系统统计
 #[tauri::command]
-fn get_stats(password: String) -> Result<serde_json::Value, String> {
+fn get_stats(session_id: String, state: tauri::State<'_, session::SessionManager>) -> Result<serde_json::Value, String> {
+    let key = state.get_key(&session_id).ok_or("未登录或会话已过期")?;
     let vp = vault_path();
     let password_count = if vp.exists() {
-        match vault::load_vault(vp.to_str().unwrap(), &password) {
+        match vault::load_vault(vp.to_str().unwrap(), &key) {
             Ok(v) => v.entries.len(), Err(_) => 0,
         }
     } else { 0 };
 
-    let api_count = match api_keys::load_keys(&password) {
+    let ak_path = {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_else(|_| ".".into());
+        PathBuf::from(home).join(".key-vault").join("apikeys.enc")
+    };
+    let api_count = match api_keys::load_keys(ak_path.to_str().unwrap(), &key) {
         Ok(keys) => keys.len(), Err(_) => 0,
     };
 
@@ -187,13 +197,27 @@ fn get_disk_info() -> (u64, u64) {
 
 /// API Keys
 #[tauri::command]
-fn api_keys_load(password: String) -> Result<Vec<api_keys::ApiKey>, String> {
-    api_keys::load_keys(&password)
+fn api_keys_load(session_id: String, state: tauri::State<'_, session::SessionManager>) -> Result<Vec<api_keys::ApiKey>, String> {
+    let key = state.get_key(&session_id).ok_or("未登录或会话已过期")?;
+    let ak_path = {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_else(|_| ".".into());
+        PathBuf::from(home).join(".key-vault").join("apikeys.enc")
+    };
+    api_keys::load_keys(ak_path.to_str().unwrap(), &key)
 }
 
 #[tauri::command]
-fn api_keys_save(keys: Vec<api_keys::ApiKey>, password: String) -> Result<(), String> {
-    api_keys::save_keys(&keys, &password)
+fn api_keys_save(keys: Vec<api_keys::ApiKey>, session_id: String, state: tauri::State<'_, session::SessionManager>) -> Result<(), String> {
+    let key = state.get_key(&session_id).ok_or("未登录或会话已过期")?;
+    let ak_path = {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_else(|_| ".".into());
+        PathBuf::from(home).join(".key-vault").join("apikeys.enc")
+    };
+    api_keys::save_keys(&keys, ak_path.to_str().unwrap(), &key)
 }
 
 /// 打开 URL
@@ -211,6 +235,53 @@ fn open_url(url: String) -> Result<(), String> {
         std::process::Command::new("xdg-open").arg(u).spawn()
             .map_err(|e| format!("打开失败: {}", e))?;
     }
+    Ok(())
+}
+
+/// 会话管理
+#[tauri::command]
+fn session_login(password: String, state: tauri::State<'_, session::SessionManager>) -> Result<String, String> {
+    state.login(&password)
+}
+
+#[tauri::command]
+fn session_lock(session_id: String, state: tauri::State<'_, session::SessionManager>) -> Result<(), String> {
+    state.lock(&session_id);
+    Ok(())
+}
+
+#[tauri::command]
+fn session_status(session_id: String, state: tauri::State<'_, session::SessionManager>) -> bool {
+    state.is_active(&session_id)
+}
+
+#[tauri::command]
+fn session_change_password(session_id: String, old_password: String, new_password: String, state: tauri::State<'_, session::SessionManager>) -> Result<String, String> {
+    state.change_password(&session_id, &old_password, &new_password)
+}
+
+/// 导入加密备份文件（需要输入创建该备份时用的主密码）
+#[tauri::command]
+fn import_from_file(file_path: String, password: String) -> Result<(), String> {
+    let data = std::fs::read(&file_path).map_err(|e| format!("读取文件失败: {}", e))?;
+    if data.len() < 32 {
+        return Err("无效的备份文件".into());
+    }
+    let (salt, encrypted) = data.split_at(32);
+    let key = crate::crypto::derive_key(&password, salt);
+    let plaintext = crate::crypto::decrypt(encrypted, &key)
+        .map_err(|_| String::from("密码错误，无法导入备份文件"))?;
+
+    // 验证是有效的 JSON（确保是密码库文件）
+    let _: serde_json::Value = serde_json::from_slice(&plaintext)
+        .map_err(|_| String::from("备份文件格式错误"))?;
+
+    // 复制到 vault 路径
+    let vp = vault_path();
+    if let Some(parent) = vp.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
+    }
+    std::fs::copy(&file_path, &vp).map_err(|e| format!("导入失败: {}", e))?;
     Ok(())
 }
 
@@ -232,8 +303,10 @@ pub fn run() {
             auth_generate_key, auth_check, auth_remove,
             backup_now, restore_from_usb, list_backups,
             api_keys_load, api_keys_save, get_stats, sha_pin_run, open_url,
+            session_login, session_lock, session_status, session_change_password, import_from_file,
         ])
         .setup(|app| {
+            app.manage(session::SessionManager::new());
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default().level(log::LevelFilter::Info).build(),

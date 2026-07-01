@@ -44,9 +44,7 @@ import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { useMessage } from 'naive-ui'
-import { useVaultStore } from '../stores/vault'
 
-const vault = useVaultStore()
 const authorized = ref(false)
 const backingUp = ref(false)
 const restoring = ref(false)
@@ -104,12 +102,16 @@ async function importFile() {
 
   const filePath = selected as string
 
+  // 需要输入该备份文件对应的主密码
+  const importPwd = window.prompt(`请输入该备份文件的主密码：\n${filePath}`)
+  if (!importPwd) return
+
   if (!window.confirm(`将导入 ${filePath} 并覆盖当前所有密码数据，确定继续？`)) return
   importing.value = true
   try {
     await invoke('import_from_file', {
       filePath,
-      password: vault.masterPassword,
+      password: importPwd,
     })
     message.success('导入成功，请重新解锁')
   } catch (e: any) {
