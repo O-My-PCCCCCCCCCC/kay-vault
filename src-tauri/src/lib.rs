@@ -87,8 +87,34 @@ fn get_stats(password: String) -> Result<serde_json::Value, String> {
         Ok(keys) => keys.len(), Err(_) => 0,
     };
 
+    // 计算磁盘用量细分
     let (disk_total, disk_avail) = get_disk_info();
     let disk_used = disk_total.saturating_sub(disk_avail);
+
+    // 密码数据 = vault.enc + apikeys.enc
+    let vault_file = vault_path();
+    let apikeys_file = {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_else(|_| ".".into());
+        PathBuf::from(home).join(".key-vault").join("apikeys.enc")
+    };
+    let mut password_data_bytes = 0u64;
+    if vault_file.exists() {
+        if let Ok(m) = std::fs::metadata(&vault_file) { password_data_bytes += m.len(); }
+    }
+    if apikeys_file.exists() {
+        if let Ok(m) = std::fs::metadata(&apikeys_file) { password_data_bytes += m.len(); }
+    }
+
+    // 软件数据 = ~/.key-vault/ 目录总大小 - 密码文件
+    let kvd = key_vault_dir();
+    let vault_dir_total = if kvd.exists() { dir_size(&kvd) } else { 0 };
+    let app_data_bytes = vault_dir_total.saturating_sub(password_data_bytes);
+
+    // 其他数据 = 磁盘已用 - 软件数据 - 密码数据
+    let other_bytes = disk_used.saturating_sub(app_data_bytes + password_data_bytes);
+
     let disk_percent = if disk_total > 0 { (disk_used as f64 / disk_total as f64 * 100.0).round() as u64 } else { 0 };
 
     Ok(serde_json::json!({
@@ -98,7 +124,33 @@ fn get_stats(password: String) -> Result<serde_json::Value, String> {
         "disk_avail": disk_avail,
         "disk_used": disk_used,
         "disk_percent": disk_percent,
+        "password_data_bytes": password_data_bytes,
+        "app_data_bytes": app_data_bytes,
+        "other_bytes": other_bytes,
     }))
+}
+
+fn key_vault_dir() -> PathBuf {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    PathBuf::from(home).join(".key-vault")
+}
+
+fn dir_size(path: &std::path::Path) -> u64 {
+    let mut total = 0u64;
+    if let Ok(entries) = std::fs::read_dir(path) {
+        for entry in entries.flatten() {
+            if let Ok(meta) = entry.metadata() {
+                if meta.is_dir() {
+                    total += dir_size(&entry.path());
+                } else {
+                    total += meta.len();
+                }
+            }
+        }
+    }
+    total
 }
 
 fn get_disk_info() -> (u64, u64) {

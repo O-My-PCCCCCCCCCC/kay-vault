@@ -14,10 +14,24 @@
                   @update:value="onMenuChange"
                 />
                 <div class="sider-footer">
-                  <div class="sf-row"><span>🔑 密码</span><span class="sf-val">{{ stats.password_count }}</span></div>
-                  <div class="sf-row"><span>🔐 API</span><span class="sf-val">{{ stats.api_count }}</span></div>
-                  <div class="sf-bar"><div class="sf-fill" :style="{ width: stats.disk_percent + '%' }"></div></div>
-                  <div class="sf-row sf-small"><span>💾 {{ fmtSize(stats.disk_used) }} / {{ fmtSize(stats.disk_total) }}</span><span>{{ stats.disk_percent }}%</span></div>
+                  <div class="sf-stacked-bar">
+                    <div class="sf-seg seg-other" :style="{ width: pctOther() + '%' }" title="其他数据"></div>
+                    <div class="sf-seg seg-app" :style="{ width: pctApp() + '%' }" title="软件数据"></div>
+                    <div class="sf-seg seg-pwd" :style="{ width: pctPwd() + '%' }" title="密码数据"></div>
+                    <div class="sf-seg seg-free" :style="{ width: pctFree() + '%' }" title="剩余空间"></div>
+                  </div>
+                  <div class="sf-legend">
+                    <span class="sf-legend-item"><i class="dot dot-other"></i>其他 {{ fmtSize(stats.other_bytes) }}</span>
+                    <span class="sf-legend-item"><i class="dot dot-app"></i>软件 {{ fmtSize(stats.app_data_bytes) }}</span>
+                    <span class="sf-legend-item"><i class="dot dot-pwd"></i>密码 {{ fmtSize(stats.password_data_bytes) }}</span>
+                  </div>
+                  <div class="sf-row">
+                    <span>💾 {{ fmtSize(stats.disk_used) }} / {{ fmtSize(stats.disk_total) }}</span>
+                    <span>{{ stats.disk_percent }}%</span>
+                  </div>
+                  <div class="sf-row">
+                    <span>🔑 {{ stats.password_count }} · 🔐 {{ stats.api_count }}</span>
+                  </div>
                 </div>
               </n-layout-sider>
               <n-layout style="height: 100%">
@@ -53,6 +67,9 @@ const stats = ref({
   disk_avail: 0,
   disk_used: 0,
   disk_percent: 0,
+  password_data_bytes: 0,
+  app_data_bytes: 0,
+  other_bytes: 0,
 })
 
 function fmtSize(bytes: number): string {
@@ -71,6 +88,14 @@ async function refreshStats() {
     // 忽略，下次切换页面时再试
   }
 }
+
+function pct(part: number): number {
+  return stats.value.disk_total > 0 ? (part / stats.value.disk_total * 100) : 0
+}
+function pctOther() { return pct(stats.value.other_bytes) }
+function pctApp() { return pct(stats.value.app_data_bytes) }
+function pctPwd() { return pct(stats.value.password_data_bytes) }
+function pctFree() { return pct(stats.value.disk_avail) }
 
 watch(() => appStore.unlocked, (v) => { if (v) refreshStats() })
 router.afterEach(() => refreshStats())
@@ -113,30 +138,52 @@ function onMenuChange(key: string) {
   border-top: 1px solid var(--border);
   font-size: 11px;
 }
+.sf-stacked-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.sf-seg { transition: width 0.3s; }
+.seg-other { background: #5a5a6a; }
+.seg-app { background: #5b9bd5; }
+.seg-pwd { background: #4caf50; }
+.seg-free { background: transparent; }
+.sf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.sf-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.dot-other { background: #5a5a6a; }
+.dot-app { background: #5b9bd5; }
+.dot-pwd { background: #4caf50; }
 .sf-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 2px 0;
+  margin: 1px 0;
   color: var(--text-muted);
 }
 .sf-val {
   color: var(--text-secondary);
   font-weight: 600;
   font-family: monospace;
-}
-.sf-small { font-size: 10px; }
-.sf-bar {
-  height: 3px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 2px;
-  margin: 4px 0;
-  overflow: hidden;
-}
-.sf-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-red), #B31D28);
-  border-radius: 2px;
-  transition: width 0.3s;
 }
 </style>
