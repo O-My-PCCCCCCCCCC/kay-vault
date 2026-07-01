@@ -56,25 +56,48 @@ fn config_save(cfg: config::AppConfig) -> Result<(), String> {
     config::save_config(path.to_str().unwrap(), &cfg)
 }
 
+fn get_backup_path() -> String {
+    let cp = config_path();
+    if cp.exists() {
+        config::load_config(cp.to_str().unwrap()).backup_path
+    } else {
+        "C:/LuSh-Password-Backup".into()
+    }
+}
+
 #[tauri::command]
-fn auth_generate_key() -> Result<(), String> { auth::generate_key() }
+fn auth_generate_key() -> Result<(), String> {
+    let bp = get_backup_path();
+    auth::generate_key_with_path(&bp)
+}
 #[tauri::command]
-fn auth_check() -> bool { auth::is_authorized() }
+fn auth_check() -> bool {
+    let bp = get_backup_path();
+    auth::is_authorized_with_path(&bp)
+}
 #[tauri::command]
-fn auth_remove() -> Result<(), String> { auth::remove_auth() }
+fn auth_remove() -> Result<(), String> {
+    let bp = get_backup_path();
+    auth::remove_auth_with_path(&bp)
+}
 
 #[tauri::command]
 fn backup_now() -> Result<String, String> {
-    backup::backup_vault(vault_path().to_str().unwrap())
+    let bp = get_backup_path();
+    backup::backup_vault(vault_path().to_str().unwrap(), &bp)
 }
 
 #[tauri::command]
 fn restore_from_usb(filename: Option<String>) -> Result<(), String> {
-    backup::restore_vault(vault_path().to_str().unwrap(), filename.as_deref())
+    let bp = get_backup_path();
+    backup::restore_vault(vault_path().to_str().unwrap(), &bp, filename.as_deref())
 }
 
 #[tauri::command]
-fn list_backups() -> Result<Vec<String>, String> { backup::list_backups() }
+fn list_backups() -> Result<Vec<String>, String> {
+    let bp = get_backup_path();
+    backup::list_backups(&bp)
+}
 
 /// 系统统计
 #[tauri::command]

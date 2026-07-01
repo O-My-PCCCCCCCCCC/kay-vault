@@ -19,6 +19,16 @@
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
+      <div class="s-group-title">📂 备份路径</div>
+      <div class="s-row s-row-col">
+        <div class="s-path">{{ backupPath || '未设置' }}</div>
+        <n-button size="small" @click="pickBackupFolder">选择文件夹</n-button>
+      </div>
+    </div>
+
+    <n-divider style="margin: 8px 0" />
+
+    <div class="s-group">
       <div class="s-group-title">🔐 独立锁定</div>
       <div class="s-row">
         <span class="s-label">密码库</span>
@@ -89,6 +99,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
 import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-dialog'
 import { useAppStore } from '../stores/app'
 import DeviceAuthList from '../components/DeviceAuthList.vue'
 import BackupPanel from '../components/BackupPanel.vue'
@@ -96,6 +107,7 @@ import BackupPanel from '../components/BackupPanel.vue'
 const appStore = useAppStore()
 const message = useMessage()
 const autoLock = ref(5)
+const backupPath = ref('')
 const showChangePwd = ref(false)
 const showUnlockVault = ref(false)
 const showUnlockApi = ref(false)
@@ -110,28 +122,47 @@ const lockOptions = [
   { label: '15分', value: 15 }, { label: '30分', value: 30 }, { label: '永不', value: 0 },
 ]
 
-const savedCfg = ref<{ auto_lock_minutes: number; categories: string[] } | null>(null)
+interface AppCfg { auto_lock_minutes: number; backup_path: string; categories: string[] }
+const savedCfg = ref<AppCfg | null>(null)
 
 // 加载配置
 onMounted(async () => {
   try {
-    const cfg = await invoke<{ auto_lock_minutes: number; categories: string[] }>('config_load')
+    const cfg = await invoke<AppCfg>('config_load')
     savedCfg.value = cfg
     autoLock.value = cfg.auto_lock_minutes ?? 5
+    backupPath.value = cfg.backup_path || 'C:/LuSh-Password-Backup'
     appStore.autoLockMinutes = autoLock.value
   } catch { /* 使用默认值 */ }
 })
 
-// 保存配置（只改 auto_lock_minutes，保留 categories）
-watch(autoLock, async (v) => {
-  appStore.autoLockMinutes = v
+// 保存配置（auto_lock_minutes + backup_path，保留 categories）
+async function saveCfg() {
   if (!savedCfg.value) return
   try {
     await invoke('config_save', {
-      cfg: { auto_lock_minutes: v, categories: savedCfg.value.categories },
+      cfg: {
+        auto_lock_minutes: autoLock.value,
+        backup_path: backupPath.value,
+        categories: savedCfg.value.categories,
+      },
     })
   } catch { /* 忽略 */ }
+}
+
+watch(autoLock, async (v) => {
+  appStore.autoLockMinutes = v
+  await saveCfg()
 })
+
+async function pickBackupFolder() {
+  const selected = await open({ directory: true, multiple: false, title: '选择备份文件夹' })
+  if (selected) {
+    backupPath.value = selected as string
+    await saveCfg()
+    message.success('备份路径已更新')
+  }
+}
 
 function doLockVault() {
   appStore.lockVault(); message.success('密码库已锁定')
@@ -177,6 +208,8 @@ async function doChangePwd() {
 .s-group { padding: 4px 0; }
 .s-group-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 .s-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.s-row-col { flex-direction: column; align-items: stretch; gap: 6px; }
+.s-path { font-size: 12px; color: var(--text-secondary); font-family: monospace; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 4px; word-break: break-all; }
 .s-label { font-size: 13px; color: var(--text-secondary); min-width: 80px; }
 .s-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 </style>

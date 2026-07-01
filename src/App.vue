@@ -105,7 +105,7 @@ async function setScreenshotProtection(protect: boolean) {
 
 // ── 自动锁定 ─────────────────────────
 let autoLockTimer: ReturnType<typeof setTimeout> | null = null
-const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'wheel', 'mousemove']
+const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'wheel']
 
 function clearAutoLock() {
   if (autoLockTimer) { clearTimeout(autoLockTimer); autoLockTimer = null }
