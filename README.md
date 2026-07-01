@@ -141,7 +141,7 @@ npm run type-check
 - **TerminalView** — SHA-PIN 终端视图，交互式密码生成体验
 - **ApiKeysView** — API 密钥管理面板
 
-主分支为 `master`，稳定版从主分支构建。
+主分支为 `main`，稳定版从主分支构建。
 
 ## 📄 许可证
 
