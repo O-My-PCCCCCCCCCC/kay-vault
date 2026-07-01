@@ -44,5 +44,11 @@ npx tauri dev
 if !errorlevel! neq 0 (
     echo.
     echo [错误] 程序异常退出 (错误码: !errorlevel!)
-    pause
+) else (
+    echo.
+    echo [正常] 调试程序已退出
 )
+
+echo.
+echo 按任意键关闭此窗口...
+pause >nul
