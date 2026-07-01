@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppConfig {
     pub auto_lock_minutes: u32,
+    pub backup_path: String,
     pub categories: Vec<String>,
 }
 
@@ -10,6 +11,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             auto_lock_minutes: 5,
+            backup_path: "C:/LuSh-Password-Backup".into(),
             categories: vec![
                 "社交账号".into(),
                 "开发工具".into(),

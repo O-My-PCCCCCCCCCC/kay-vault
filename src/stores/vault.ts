@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { useAppStore } from './app'
 
 export interface VaultEntry {
   id: string
@@ -9,6 +10,7 @@ export interface VaultEntry {
   username: string
   password: string
   notes: string
+  group: string
   category: string
   created_at: string
   updated_at: string
@@ -18,15 +20,10 @@ export const useVaultStore = defineStore('vault', () => {
   const entries = ref<VaultEntry[]>([])
   const loading = ref(false)
   const searchQuery = ref('')
-  const selectedCategory = ref('全部')
-  const masterPassword = ref('')
   const error = ref('')
 
   const filteredEntries = computed(() => {
     let result = entries.value
-    if (selectedCategory.value && selectedCategory.value !== '全部') {
-      result = result.filter(e => e.category === selectedCategory.value)
-    }
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase()
       result = result.filter(e =>
@@ -38,17 +35,33 @@ export const useVaultStore = defineStore('vault', () => {
     return result
   })
 
-  const categories = computed(() => {
-    const cats = new Set(entries.value.map(e => e.category))
-    return ['全部', ...cats]
+  // 按分组 → 分类 分组的树结构
+  const treeData = computed(() => {
+    const groupMap = new Map<string, Map<string, VaultEntry[]>>()
+    for (const entry of filteredEntries.value) {
+      const g = entry.group || '默认分组'
+      const c = entry.category || '未分类'
+      if (!groupMap.has(g)) groupMap.set(g, new Map())
+      const catMap = groupMap.get(g)!
+      if (!catMap.has(c)) catMap.set(c, [])
+      catMap.get(c)!.push(entry)
+    }
+    return Array.from(groupMap.entries()).map(([group, catMap]) => ({
+      group,
+      categories: Array.from(catMap.entries()).map(([category, items]) => ({
+        category,
+        items,
+      })),
+    }))
   })
 
-  async function loadFromDisk(password: string) {
+  async function loadFromDisk() {
+    const app = useAppStore()
+    if (!app.sessionId) throw new Error('未登录')
     loading.value = true
     error.value = ''
     try {
-      masterPassword.value = password
-      const data = await invoke<VaultEntry[]>('vault_load', { password })
+      const data = await invoke<VaultEntry[]>('vault_load', { sessionId: app.sessionId })
       entries.value = data || []
     } catch (e: any) {
       error.value = String(e)
@@ -59,10 +72,11 @@ export const useVaultStore = defineStore('vault', () => {
   }
 
   async function saveToDisk() {
-    if (!masterPassword.value) return
+    const app = useAppStore()
+    if (!app.sessionId) return
     await invoke('vault_save', {
       entries: entries.value,
-      password: masterPassword.value,
+      sessionId: app.sessionId,
     })
   }
 
@@ -85,8 +99,8 @@ export const useVaultStore = defineStore('vault', () => {
   }
 
   return {
-    entries, loading, searchQuery, selectedCategory, masterPassword, error,
-    filteredEntries, categories,
+    entries, loading, searchQuery, error,
+    filteredEntries, treeData,
     loadFromDisk, saveToDisk, addEntry, updateEntry, deleteEntry,
   }
 })

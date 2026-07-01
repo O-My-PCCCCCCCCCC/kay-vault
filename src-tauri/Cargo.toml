@@ -21,6 +21,7 @@ serde = { version = "1", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2", features = [] }
 tauri-plugin-log = "2"
+tauri-plugin-single-instance = "2"
 aes-gcm = "0.10"
 argon2 = "0.5"
 password-hash = "0.5"

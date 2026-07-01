@@ -1,31 +1,24 @@
 use chrono::Local;
-use std::path::PathBuf;
-
-const BACKUP_ROOT: &str = "C:/LuSh-Password-Backup";
-
-fn backup_root() -> PathBuf {
-    PathBuf::from(BACKUP_ROOT)
-}
+use std::path::{Path, PathBuf};
 
 /// 确保备份目录存在
-pub fn ensure_backup_dir() -> Result<(), String> {
-    let root = backup_root();
-    std::fs::create_dir_all(&root).map_err(|e| format!("创建备份目录失败: {}", e))
+pub fn ensure_backup_dir(backup_root: &str) -> Result<(), String> {
+    let root = Path::new(backup_root);
+    std::fs::create_dir_all(root).map_err(|e| format!("创建备份目录失败: {}", e))
 }
 
-/// 备份加密密码库到 C:/LuSh-Password-Backup
-pub fn backup_vault(vault_path: &str) -> Result<String, String> {
-    // 先确保目录存在
-    ensure_backup_dir()?;
+/// 备份加密密码库到指定目录
+pub fn backup_vault(vault_path: &str, backup_root: &str) -> Result<String, String> {
+    ensure_backup_dir(backup_root)?;
 
     if !crate::auth::is_authorized() {
         return Err("本机未认证，无法备份。请先在「设置 → 设备认证」中添加认证。".into());
     }
-    if !std::path::Path::new(vault_path).exists() {
+    if !Path::new(vault_path).exists() {
         return Err("密码库文件不存在".into());
     }
 
-    let root = backup_root();
+    let root = Path::new(backup_root);
     let date_str = Local::now().format("%Y%m%d_%H%M%S").to_string();
     let backup_name = format!("vault-{}.enc", date_str);
     let backup_path = root.join(&backup_name);
@@ -35,16 +28,15 @@ pub fn backup_vault(vault_path: &str) -> Result<String, String> {
     Ok(backup_name)
 }
 
-/// 从 C:/LuSh-Password-Backup 还原密码库到本机
-pub fn restore_vault(target_path: &str, backup_filename: Option<&str>) -> Result<(), String> {
-    // 先确保目录存在
-    ensure_backup_dir()?;
+/// 从备份目录还原密码库到本机
+pub fn restore_vault(target_path: &str, backup_root: &str, backup_filename: Option<&str>) -> Result<(), String> {
+    ensure_backup_dir(backup_root)?;
 
     if !crate::auth::is_authorized() {
         return Err("本机未认证，无法还原。请先在「设置 → 设备认证」中添加认证。".into());
     }
 
-    let root = backup_root();
+    let root = Path::new(backup_root);
     let source = match backup_filename {
         Some(name) => {
             let p = root.join(name);
@@ -54,7 +46,7 @@ pub fn restore_vault(target_path: &str, backup_filename: Option<&str>) -> Result
             p
         }
         None => {
-            let mut entries: Vec<_> = std::fs::read_dir(&root)
+            let mut entries: Vec<_> = std::fs::read_dir(root)
                 .map_err(|e| format!("读取备份目录失败: {}", e))?
                 .filter_map(|e| e.ok())
                 .filter(|e| {
@@ -71,7 +63,7 @@ pub fn restore_vault(target_path: &str, backup_filename: Option<&str>) -> Result
         }
     };
 
-    if let Some(parent) = std::path::Path::new(target_path).parent() {
+    if let Some(parent) = Path::new(target_path).parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
     }
     std::fs::copy(&source, target_path).map_err(|e| format!("还原失败: {}", e))?;
@@ -79,13 +71,13 @@ pub fn restore_vault(target_path: &str, backup_filename: Option<&str>) -> Result
 }
 
 /// 列出所有备份文件
-pub fn list_backups() -> Result<Vec<String>, String> {
-    let root = backup_root();
+pub fn list_backups(backup_root: &str) -> Result<Vec<String>, String> {
+    let root = Path::new(backup_root);
     if !root.exists() {
         return Ok(Vec::new());
     }
     let mut backups = Vec::new();
-    let entries = std::fs::read_dir(&root).map_err(|e| format!("读取备份目录失败: {}", e))?;
+    let entries = std::fs::read_dir(root).map_err(|e| format!("读取备份目录失败: {}", e))?;
     for entry in entries {
         if let Ok(entry) = entry {
             if let Some(name) = entry.file_name().to_str() {
