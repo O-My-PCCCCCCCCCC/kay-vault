@@ -7,6 +7,7 @@ export const useAppStore = defineStore('app', () => {
   const vaultLocked = ref(false)    // 密码库单独锁定（UI 级）
   const apiLocked = ref(false)      // API Key 单独锁定（UI 级）
   const sessionId = ref<string | null>(null)  // 会话令牌
+  const autoLockMinutes = ref(5)    // 自动锁定分钟（0=永不）
 
   function lockVault() { vaultLocked.value = true }
   function unlockVault() { vaultLocked.value = false }
@@ -33,7 +34,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   return {
-    unlocked, vaultLocked, apiLocked, sessionId,
+    unlocked, vaultLocked, apiLocked, sessionId, autoLockMinutes,
     lockVault, unlockVault, lockApi, unlockApi,
     login, logout,
   }

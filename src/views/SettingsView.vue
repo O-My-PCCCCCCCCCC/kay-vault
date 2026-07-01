@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
 import { invoke } from '@tauri-apps/api/core'
 import { useAppStore } from '../stores/app'
@@ -109,6 +109,29 @@ const lockOptions = [
   { label: '1分', value: 1 }, { label: '5分', value: 5 },
   { label: '15分', value: 15 }, { label: '30分', value: 30 }, { label: '永不', value: 0 },
 ]
+
+const savedCfg = ref<{ auto_lock_minutes: number; categories: string[] } | null>(null)
+
+// 加载配置
+onMounted(async () => {
+  try {
+    const cfg = await invoke<{ auto_lock_minutes: number; categories: string[] }>('config_load')
+    savedCfg.value = cfg
+    autoLock.value = cfg.auto_lock_minutes ?? 5
+    appStore.autoLockMinutes = autoLock.value
+  } catch { /* 使用默认值 */ }
+})
+
+// 保存配置（只改 auto_lock_minutes，保留 categories）
+watch(autoLock, async (v) => {
+  appStore.autoLockMinutes = v
+  if (!savedCfg.value) return
+  try {
+    await invoke('config_save', {
+      cfg: { auto_lock_minutes: v, categories: savedCfg.value.categories },
+    })
+  } catch { /* 忽略 */ }
+})
 
 function doLockVault() {
   appStore.lockVault(); message.success('密码库已锁定')

@@ -98,19 +98,51 @@ function pctApp() { return pct(stats.value.app_data_bytes) }
 function pctPwd() { return pct(stats.value.password_data_bytes) }
 function pctFree() { return pct(stats.value.disk_avail) }
 
-// 防截屏：解锁后保护窗口内容，锁定后解除
+// ── 防截屏 ──────────────────────────
 async function setScreenshotProtection(protect: boolean) {
   try { await getCurrentWindow().setContentProtected(protect) } catch { /* 忽略 */ }
 }
 
+// ── 自动锁定 ─────────────────────────
+let autoLockTimer: ReturnType<typeof setTimeout> | null = null
+const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'wheel', 'mousemove']
+
+function clearAutoLock() {
+  if (autoLockTimer) { clearTimeout(autoLockTimer); autoLockTimer = null }
+}
+
+function resetAutoLock() {
+  clearAutoLock()
+  const minutes = appStore.autoLockMinutes
+  if (minutes <= 0) return // 永不锁定
+  autoLockTimer = setTimeout(() => appStore.logout(), minutes * 60 * 1000)
+}
+
+function onActivity() {
+  if (appStore.unlocked) resetAutoLock()
+}
+
+function startActivityTracking() {
+  for (const ev of ACTIVITY_EVENTS) document.addEventListener(ev, onActivity, { passive: true })
+  resetAutoLock()
+}
+
+function stopActivityTracking() {
+  for (const ev of ACTIVITY_EVENTS) document.removeEventListener(ev, onActivity)
+  clearAutoLock()
+}
+
 watch(() => appStore.unlocked, async (v) => {
   await setScreenshotProtection(v)
-  if (v) refreshStats()
+  if (v) { refreshStats(); startActivityTracking() }
+  else { stopActivityTracking() }
 })
 
 router.afterEach(() => refreshStats())
 
-onMounted(() => { if (appStore.unlocked) setScreenshotProtection(true) })
+onMounted(() => {
+  if (appStore.unlocked) { setScreenshotProtection(true); startActivityTracking() }
+})
 
 const menuOptions = [
   { label: '🔑 我的密码', key: 'vault' },
