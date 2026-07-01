@@ -23,9 +23,7 @@
 
 ## 🖼️ 截图
 
-| 锁屏 | 密码库 | SHA-PIN 生成器 |
-|------|--------|----------------|
-| ![锁屏](docs/screenshots/lock.png) | ![密码库](docs/screenshots/vault.png) | ![生成器](docs/screenshots/terminal.png) |
+> *📸 截图待补充 — 欢迎贡献！*
 
 ## 🚀 快速开始
 
@@ -127,6 +125,23 @@ npm run tauri build
 # 代码检查
 npm run type-check
 ```
+
+### 🪟 快速启动（调试用）
+
+项目根目录提供了 Windows 一键启动脚本：
+
+**`启动-调试程序.bat`** — 双击即可启动 Tauri 开发模式
+- 自动检测 `node_modules`，缺失时自动 `npm install`
+- 自动检测 Tauri CLI
+- 中文提示，调试友好
+
+## 🌿 开发分支
+
+当前开发在 `feat/terminal-and-api` 分支：
+- **TerminalView** — SHA-PIN 终端视图，交互式密码生成体验
+- **ApiKeysView** — API 密钥管理面板
+
+主分支为 `master`，稳定版从主分支构建。
 
 ## 📄 许可证
 
