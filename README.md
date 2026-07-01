@@ -1,6 +1,6 @@
 # 🔑 凯伊密码管家 · Kay Vault
 
-> 一个安全、简洁的桌面密码管理器，基于 SHA-PIN 算法生成确定性密码。
+> 一个运行在 U 盘上的桌面密码管理器，基于 AES-256-GCM + Argon2id 加密存储。
 
 ![Tauri](https://img.shields.io/badge/Tauri-v2-FFC131?logo=tauri)
 ![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vue.js)
@@ -9,63 +9,118 @@
 
 ---
 
-## ✨ 功能
+## 🎯 应用场景
+
+**随身携带的密码保险箱。** 整个程序运行在 U 盘上，插到任何 Windows 电脑即可使用，拔走即消失。
+
+```
+U 盘 /
+├── KayVault/          ← 程序本体
+└── .key-vault/        ← 加密数据（AES-256-GCM）
+    ├── vault.enc      ← 密码库
+    ├── apikeys.enc    ← API 密钥
+    └── master.verify  ← 主密码校验
+```
+
+适合：
+- **不信任的电脑** — 在公用电脑上安全使用密码
+- **跨设备携带** — U 盘一插即用，不留痕迹
+- **离线安全** — 所有加密在本地完成，不依赖网络
+
+> 建议配合 U 盘全盘加密（BitLocker / VeraCrypt）使用，双层保护。
+
+### 功能清单
 
 | 功能 | 说明 |
 |------|------|
 | **🔑 密码库** | AES-GCM 加密存储，支持分组/分类管理、搜索、复制 |
-| **🔐 API 密钥管理器** | 安全存储和管理 AI 服务商（OpenAI、Anthropic、GitHub 等）的 API 密钥 |
+| **🔐 API 密钥管理器** | 安全存储 AI 服务商（OpenAI、Anthropic、GitHub 等）的 API 密钥 |
 | **🎲 SHA-PIN 密码生成器** | 基于 SHA-256 双向链的确定性密码生成算法，离线可用 |
-| **💾 备份与还原** | 加密备份到本地目录，支持导入/导出 `.enc` 文件 |
+| **💾 备份与还原** | 加密备份到指定目录，导入时校验密码 |
 | **🔒 独立锁定** | 密码库和 API 密钥可单独锁定，互不干扰 |
 | **⏱️ 自动锁定** | 支持 1/5/15/30 分钟无操作自动锁定 |
 | **🪟 单实例运行** | 只允许一个窗口，防止重复打开 |
 
-## 🖼️ 截图
+---
 
-> *📸 截图待补充 — 欢迎贡献！*
+## 🔐 加密思路
 
-## 🚀 快速开始
+### 数据流
 
-### 下载
-
-从 [Releases](https://github.com/O-My-PCCCCCCCCCC/kay-vault/releases) 下载最新的安装包（.msi / .dmg）。
-
-### 从源码构建
-
-```bash
-# 克隆仓库
-git clone https://github.com/O-My-PCCCCCCCCCC/kay-vault.git
-cd kay-vault
-
-# 安装前端依赖
-npm install
-
-# 开发模式
-npm run tauri dev
-
-# 生产构建
-npm run tauri build
+```
+用户输入主密码 "bbkb"
+       │
+       ▼
+┌────────────────────────┐
+│  Argon2id 密钥派生      │  ← 抗暴力破解，一次跑几百毫秒
+│  主密码 + 随机盐(32B)   │
+│  → 256-bit 派生密钥     │
+└────────┬───────────────┘
+         │
+    ┌────┴────┐
+    │         │
+    ▼         ▼
+SHA-256     AES-256-GCM
+(校验标签)   (加密数据)
+    │         │
+    ▼         ▼
+master.verify  vault.enc + apikeys.enc
 ```
 
-> **系统要求**: Node.js 18+、Rust 1.77+、以及 [Tauri 系统依赖](https://v2.tauri.app/start/prerequisites/)。
+### 密钥管理
+
+采用**会话密钥机制**，密码不留在前端：
+
+```
+登录时:
+  "bbkb" → Argon2id → 派生密钥 → 存 Rust 内存 → 返回 session_id
+                                                      │
+之后操作:                                                │
+  前端传 session_id ────────────────────────────────────┘
+  → Rust 查内存拿密钥 → AES 解密
+  → 不再跑 Argon2id，不再传密码明文
+```
+
+| 保护措施 | 实现 |
+|---------|------|
+| 密码不存前端 | 登录后只保留随机 session_id |
+| 防截屏 | `setContentProtected(true)`，截图全黑 |
+| 防中文输入 | 密码框禁用输入法 (`ime-mode: disabled`) |
+| 真锁定 | 后端删除内存中的派生密钥，不解密 |
+| 防暴力破解 | Argon2id 内存硬，每秒只能试几次 |
+| 自动锁定 | 无操作 N 分钟 → 自动锁定 |
+
+> 详细加密设计请参见 [docs/encryption-design.md](docs/encryption-design.md)。
+
+---
 
 ## 🏗️ 技术架构
+
+### 前后端分离
+
+```
+Vue.js 3 + TypeScript ─── Tauri IPC ─── Rust 后端
+  前端界面                     调用        加密 + 文件 I/O
+  Pinia 状态管理                          会话管理
+  Naive UI 组件库                         文件读写
+```
+
+### 目录结构
 
 ```
 kay-vault/
 ├── src/                      # Vue.js 前端
-│   ├── App.vue               # 根组件（锁屏 + 主布局）
+│   ├── App.vue               # 根组件（锁屏 + 布局 + 自动锁定）
 │   ├── main.ts               # 入口
 │   ├── router/               # 路由配置
 │   ├── stores/               # Pinia 状态管理
-│   │   ├── app.ts            # 应用状态（解锁/锁定）
+│   │   ├── app.ts            # 应用状态（session_id, 锁定）
 │   │   └── vault.ts          # 密码库状态
 │   ├── views/                # 页面视图
 │   │   ├── VaultView.vue     # 密码库
 │   │   ├── ApiKeysView.vue   # API 密钥
 │   │   ├── TerminalView.vue  # SHA-PIN 终端
-│   │   └── SettingsView.vue  # 设置页
+│   │   └── SettingsView.vue  # 设置页（备份路径、密码修改）
 │   ├── components/           # 组件
 │   │   ├── LockScreen.vue    # 锁屏
 │   │   ├── PasswordForm.vue  # 密码编辑表单
@@ -78,70 +133,57 @@ kay-vault/
 │   ├── src/
 │   │   ├── lib.rs            # Tauri 入口 + 命令注册
 │   │   ├── main.rs           # 主函数
-│   │   ├── vault.rs          # 密码库加解密
-│   │   ├── auth.rs           # 设备认证
-│   │   ├── backup.rs         # 备份还原
-│   │   ├── config.rs         # 配置管理
-│   │   ├── api_keys.rs       # API 密钥管理
-│   │   ├── crypto.rs         # 加密工具
+│   │   ├── session.rs        # 会话管理器（密钥缓存 + 锁定）
+│   │   ├── crypto.rs         # Argon2id + AES-256-GCM
+│   │   ├── vault.rs          # 密码库加载/保存
+│   │   ├── api_keys.rs       # API 密钥加载/保存
+│   │   ├── auth.rs           # USB 设备认证（备份用）
+│   │   ├── backup.rs         # 备份与还原
+│   │   ├── config.rs         # 配置管理（路径、自动锁定）
 │   │   └── sha_pin.rs        # SHA-PIN 算法
 │   └── Cargo.toml
+├── docs/
+│   └── encryption-design.md  # 加密架构详细文档
 └── package.json
 ```
 
-### 安全设计
+---
 
-- **AES-256-GCM** 加密存储密码库
-- **Argon2** 密钥派生，抗暴力破解
-- **SHA-256 双向链** 确定性密码生成，不存储密码本身
-- **主密码**：所有加密的根密钥，应用层不做缓存
+## 🚀 快速开始
 
-## 🎲 SHA-PIN 算法
+### 系统要求
 
-SHA-PIN 是一种**确定性密码生成算法**，核心思路：
+- **Node.js** 18+
+- **Rust** 1.77+
+- [Tauri 系统依赖](https://v2.tauri.app/start/prerequisites/)
 
-1. 输入 **标识**（如 `github.com`）+ **主密码**
-2. 通过 SHA-256 构建正向链和反向链
-3. 双重指纹聚合后输出最终密码
-4. 相同输入 → 相同输出，无需存储密码
-
-支持 4/6/8 位长度，适合生成 PIN 码或强密码片段。
-
-## 🔧 开发
+### 从源码构建
 
 ```bash
-# 安装依赖
+# 克隆仓库
+git clone https://github.com/O-My-PCCCCCCCCCC/kay-vault.git
+cd kay-vault
+
+# 安装前端依赖
 npm install
 
 # 开发模式（热重载）
 npm run tauri dev
 
-# 仅运行前端
-npm run dev
-
 # 生产构建
 npm run tauri build
-
-# 代码检查
-npm run type-check
 ```
 
-### 🪟 快速启动（调试用）
+### 快速启动（调试用）
 
 项目根目录提供了 Windows 一键启动脚本：
 
 **`启动-调试程序.bat`** — 双击即可启动 Tauri 开发模式
-- 自动检测 `node_modules`，缺失时自动 `npm install`
-- 自动检测 Tauri CLI
+- 自动检测依赖，自动清理旧进程
 - 中文提示，调试友好
+- 前端端口: `http://localhost:5173`
 
-## 🌿 开发分支
-
-当前开发在 `feat/terminal-and-api` 分支：
-- **TerminalView** — SHA-PIN 终端视图，交互式密码生成体验
-- **ApiKeysView** — API 密钥管理面板
-
-主分支为 `main`，稳定版从主分支构建。
+---
 
 ## 📄 许可证
 
