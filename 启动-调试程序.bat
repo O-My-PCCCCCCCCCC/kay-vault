@@ -6,20 +6,36 @@ echo ============================================
 echo   * 凯伊密码管家 - 开发调试模式
 echo ============================================
 echo.
-echo  正在启动 Tauri 开发服务器...
-echo  将打开前端热重载 + Rust 后端
-echo  按 Ctrl+C 停止
-echo.
 echo  前端端口: http://localhost:5173
+echo  按 Ctrl+C 停止调试
 echo.
 echo ============================================
-echo.
 
 cd /d "%~dp0"
 
-:: 检查 node_modules 是否存在
+:: ── 清理残留的旧进程 ──────────────────────────
+echo [检查] 检测残留的旧进程...
+
+:: 查端口 5173 (Vite 开发服务器)
+for /f "tokens=5" %%a in ('
+    netstat -ano ^| findstr /C:":5173 " ^| findstr LISTENING
+') do (
+    echo [清理] 发现旧 Vite 进程 (PID: %%a)，正在关闭...
+    taskkill /F /PID %%a >nul 2>&1
+)
+
+:: 查 key-vault 程序窗口
+taskkill /F /IM "key-vault.exe" >nul 2>&1
+if !errorlevel! equ 0 (
+    echo [清理] 已关闭旧的 key-vault 窗口
+)
+
+:: 等端口释放
+timeout /t 1 /nobreak >nul
+
+:: ── 检查依赖 ──────────────────────────────────
 if not exist "node_modules\" (
-    echo [首次运行] 正在安装前端依赖...
+    echo [安装] 正在安装前端依赖...
     npm install
     if !errorlevel! neq 0 (
         echo.
@@ -30,14 +46,8 @@ if not exist "node_modules\" (
     echo.
 )
 
-:: 检查 Tauri CLI 是否可用
-npx tauri --version >nul 2>&1
-if !errorlevel! neq 0 (
-    echo [错误] Tauri CLI 不可用，尝试安装...
-    npm install
-)
-
-echo [启动] 正在运行 npm run tauri dev...
+:: ── 启动 Tauri 开发模式 ──────────────────────
+echo [启动] 正在运行 npx tauri dev...
 echo.
 npx tauri dev
 
