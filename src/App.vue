@@ -8,11 +8,13 @@
             <n-layout has-sider style="height: 100%">
               <n-layout-sider bordered width="200" class="sider">
                 <div class="sider-header">🔑 KVault</div>
-                <n-menu
-                  v-model:value="activeKey"
-                  :options="menuOptions"
-                  @update:value="onMenuChange"
-                />
+                <div class="sider-menu-wrap">
+                  <n-menu
+                    v-model:value="activeKey"
+                    :options="menuOptions"
+                    @update:value="onMenuChange"
+                  />
+                </div>
                 <div class="sider-footer">
                   <div class="sf-stacked-bar">
                     <div class="sf-seg seg-other" :style="{ width: pctOther() + '%' }" title="其他数据"></div>
@@ -121,6 +123,7 @@ function onMenuChange(key: string) {
 .sider {
   display: flex;
   flex-direction: column;
+  height: 100%;
   background: var(--bg-secondary) !important;
   border-right: 1px solid var(--border) !important;
 }
@@ -131,13 +134,19 @@ function onMenuChange(key: string) {
   color: var(--accent-red);
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sider-menu-wrap {
+  flex: 1;
+  overflow-y: auto;
 }
 .sider-footer {
-  margin-top: auto;
+  flex-shrink: 0;
   padding: 8px 12px;
   border-top: 1px solid var(--border);
   font-size: 11px;
 }
+
 .sf-stacked-bar {
   display: flex;
   height: 8px;
