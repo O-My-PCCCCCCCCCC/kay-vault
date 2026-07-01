@@ -1,8 +1,8 @@
-# 🔑 凯伊密码管家 · Kay Vault
+# 🔑 Kay Vault
 
-> [English](README.en.md) | **中文**
-
-> 一个运行在 U 盘上的桌面密码保险箱。主密码 + AES-256-GCM + Argon2id 加密保护，插上即用，拔走即消失。
+> **🌏 [中文](README.zh.md)** ┃ **English**
+>
+> A portable desktop password manager that lives on a USB drive. Protected by AES-256-GCM + Argon2id. Plug in and use; unplug and vanish — no traces left on the host machine.
 
 ![Tauri](https://img.shields.io/badge/Tauri-v2-FFC131?logo=tauri)
 ![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vue.js)
@@ -11,460 +11,582 @@
 
 ---
 
-## 📑 目录
+## 📑 Table of Contents
 
-- [🎯 应用场景](#-应用场景)
-- [🔐 加密思路](#-加密思路)
-- [🏗️ 技术架构](#-技术架构)
-- [🚀 快速开始](#-快速开始)
-
----
-
-## 🎯 应用场景
-
-### 解决的问题
-
-你有多组密码、API 密钥需要管理，但：
-
-- **不想用浏览器记密码** — 换台电脑就没了，而且浏览器本身安全性存疑
-- **不想把密码放云上** — 担心泄漏、审查、服务商跑路
-- **经常用公用电脑** — 网吧、公司电脑、学校机房，不敢存密码
-- **需要一个便携方案** — 插上 U 盘就能用，拔掉什么都不留
-
-### 我们的方案
-
-把程序和加密数据放在 U 盘上。不依赖云服务，不依赖操作系统账户，所有加密在本地完成。
-
-```
-U 盘结构:
-  ├── KayVault.exe ← 程序本体
-  └── .key-vault/  ← 加密数据目录（U 盘隐藏目录）
-       ├── vault.enc       ← 🔒 密码库
-       ├── apikeys.enc     ← 🔒 API 密钥
-       ├── master.verify   ← 🔑 主密码校验标签
-       └── config.json     ← ⚙️ 设置
-```
-
-> 建议配合 BitLocker / VeraCrypt 全盘加密，双层保护。
-
-### 核心功能
-
-| 功能 | 说明 |
-|------|------|
-| **🔑 密码库** | AES-GCM 加密存储，支持分组/分类管理、搜索、复制 |
-| **🔐 API 密钥管理器** | 安全存储 AI 服务商（OpenAI、Anthropic、GitHub、Azure、DeepSeek 等）的密钥 |
-| **🎲 SHA-PIN 密码生成器** | 基于 SHA-256 双向链的确定性密码生成算法，离线可用，不存储密码 |
-| **💾 备份与还原** | 加密备份到可自定义路径，导入时校验源文件主密码 |
-| **🔒 独立锁定** | 密码库和 API 密钥可分别锁定，互不干扰 |
-| **⏱️ 自动锁定** | 1/5/15/30 分钟无操作自动锁定，回到锁屏页 |
-| **🛡️ 防截屏** | 解锁后自动启用窗口防截屏保护，截图/录屏显示黑色 |
-| **🪟 单实例运行** | 只能打开一个窗口，防止误操作重复启动 |
+- [Use Case](#-use-case)
+- [Encryption Design](#-encryption-design)
+- [Technical Architecture](#-technical-architecture)
+- [Quick Start](#-quick-start)
+- [Development](#-development)
 
 ---
 
-## 🔐 加密思路
+## 🎯 Use Case
 
-### 整体架构
+### The Problem
 
-整个系统的安全根是**主密码**，一切保护都建立在这之上：
+You have passwords, API keys, and PIN codes to manage, but:
+
+- **Browser password managers are tied to a machine** — your credentials don't travel with you
+- **Cloud-based managers require trust** — you must trust the provider's security, privacy policy, and business continuity
+- **Shared/public computers are risky** — internet cafes, office workstations, school labs — you can't safely save credentials
+- **You need true portability** — a solution that lives on a physical device you control, works on any Windows machine, and leaves no trace when removed
+
+### The Solution
+
+A self-contained desktop application that runs entirely from a USB drive. All data is encrypted locally on the drive, all cryptographic operations happen on-device, and nothing is sent to the cloud. When you unplug the drive, the application and its data are completely gone from the host machine.
 
 ```
-主密码 (如 "bbkb")
+USB Drive Layout:
+  ├── KayVault.exe          ← Application binary
+  └── .key-vault/            ← Encrypted data directory (hidden)
+       ├── vault.enc        ← 🔒 Password vault (AES-256-GCM)
+       ├── apikeys.enc      ← 🔒 API keys (AES-256-GCM)
+       ├── master.verify    ← 🔑 Master password verification tag
+       └── config.json      ← ⚙️ Settings (plaintext, no secrets)
+```
+
+> **Recommendation**: Combine with full-disk encryption (BitLocker or VeraCrypt) for defense in depth — the drive-level encryption protects at rest, while Kay Vault's encryption protects in use.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **🔑 Password Vault** | AES-256-GCM encrypted storage with group/category management, search, copy, edit, and delete |
+| **🔐 API Key Manager** | Securely store API keys for AI providers (OpenAI, Anthropic, GitHub, Azure, DeepSeek, Groq, Cloudflare, Google AI) |
+| **🎲 SHA-PIN Generator** | Deterministic offline password generation using SHA-256 dual-chain algorithm. Same input → same output, no storage required |
+| **💾 Backup & Restore** | Encrypted backup to a configurable directory. Import verifies the backup file's master password before allowing restoration |
+| **🔒 Independent Locking** | Vault and API keys can be locked independently — one can stay unlocked while the other is secured |
+| **⏱️ Auto-Lock** | Configurable inactivity timer (1/5/15/30 min). Automatically returns to the lock screen |
+| **🛡️ Screenshot Protection** | Enables OS-level window content protection. Screenshots and screen recordings show a black window |
+| **🪟 Single Instance** | Prevents multiple application windows from opening simultaneously |
+
+---
+
+## 🔐 Encryption Design
+
+### High-Level Architecture
+
+The entire security model is rooted in a single **master password**. All protection derives from it through a well-defined cryptographic chain:
+
+```
+Master Password (e.g. "bbkb")
        │
        ▼
-┌──────────────────────────────────────┐
-│  Argon2id 密钥派生                    │
-│  ┌─ 输入: 主密码 + 随机盐值(32 字节)  │
-│  ├─ 参数: 内存 64MB, 迭代 3 次       │
-│  ├─ 特点: 内存硬(memory-hard)        │
-│  │        GPU/ASIC 无法加速破解       │
-│  └─ 输出: 256-bit 派生密钥           │
-└─────────────┬────────────────────────┘
-              │
-      ┌───────┴───────┐
-      │               │
-      ▼               ▼
-  SHA-256(密钥)     AES-256-GCM
-  (身份验证)        (数据加密)
-      │               │
-      ▼               ▼
- master.verify     vault.enc
-                   apikeys.enc
+┌──────────────────────────────────────────────┐
+│  Argon2id Key Derivation                      │
+│  ┌─ Inputs: Master password + random salt     │
+│  ├─ Parameters: Memory 64MB, 3 iterations    │
+│  ├─ Property: Memory-hard (ASIC/GPU/FPGA     │
+│  │            resistant, cannot accelerate)  │
+│  └─ Output: 256-bit Derived Key              │
+└─────────────────────┬────────────────────────┘
+                      │
+              ┌───────┴───────┐
+              │               │
+              ▼               ▼
+      SHA-256(derived key)  AES-256-GCM
+      (Identity Layer)     (Data Layer)
+              │               │
+              ▼               ▼
+        master.verify      vault.enc
+                          apikeys.enc
 ```
 
-**两层完全独立的保护：**
+**Two independent security layers:**
 
-| 层 | 用途 | 存储位置 | 算法 |
-|----|------|---------|------|
-| **身份验证层** | 验证用户输入的密码是否正确 | `master.verify` | SHA-256(派生密钥) |
-| **数据加密层** | 加密所有存储的密码和密钥 | `vault.enc` + `apikeys.enc` | AES-256-GCM |
+| Layer | Purpose | Storage | Algorithm |
+|-------|---------|---------|-----------|
+| **Identity Layer** | Verifies the user knows the correct master password without decrypting any data | `master.verify` | SHA-256(derived key) |
+| **Data Layer** | Encrypts all stored password entries and API keys at rest | `vault.enc` + `apikeys.enc` | AES-256-GCM |
 
-验证层和加密层使用同一派生密钥，但前者不解密数据，后者不解密密码——各司其职。
+Both layers use the **same derived key**, but serve different purposes — verification does not touch encrypted data, and decryption does not verify the password. This separation ensures that a vulnerability in one layer does not compromise the other.
 
-### 算法选型理由
+### Algorithm Selection Rationale
 
-| 算法 | 用途 | 为什么选它 |
-|------|------|-----------|
-| **Argon2id** | 从主密码派生 256-bit 密钥 | 2015 年密码哈希竞赛冠军。**内存硬**：暴力破解需要大量内存，GPU/ASIC/FPGA 无法加速。Bitwarden、1Password、KeePass 均在使用。默认配置下每次派生约 300ms，每小时只能试约 12000 次，8 位复杂密码需要数十亿年 |
-| **AES-256-GCM** | 加密存储数据 | **美国国家标准技术局(NIST)认证**，256位密钥提供 2^256 种组合。GCM 模式提供认证加密 (Authenticated Encryption)，同时保证**机密性**和**完整性**，任何篡改都会被检测到。银行、政府机密文件同一标准 |
-| **SHA-256** | 密码校验标签 | 用于验证主密码，不解密数据。速度快、抗碰撞，作为身份验证摘要足够安全 |
+#### Argon2id — Key Derivation
 
-### 文件格式详解
+**Purpose**: Transform a human-memorable master password into a cryptographically strong 256-bit key.
 
-**vault.enc / apikeys.enc：**
+**Why Argon2id:**
+- Winner of the **Password Hashing Competition (PHC)** in 2015
+- **Memory-hard**: Requires a configurable amount of memory (default 64MB) to compute. This means parallel brute-force attempts require enormous amounts of RAM — a single GPU thread would need 64MB × thousands of threads = impractical amounts of memory bandwidth
+- **GPU/ASIC/FPGA resistant**: Memory-hard functions cannot be accelerated by specialized hardware the way SHA-256 or bcrypt can
+- **Industry standard**: Used by Bitwarden, 1Password, KeePass, and other leading password managers
+- **Configurable cost**: Our default (64MB, 3 iterations) takes approximately 300ms per derivation on modern hardware, limiting brute-force to ~12,000 attempts per hour. An 8-character alphanumeric password (62^8 ≈ 2×10^14 combinations) would require billions of years to exhaust
 
-```
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-├─────────────────────────────────────────────────────────────────┤
-│                          Salt (32 字节)                          │
-│  用于 Argon2id 密钥派生。随机生成，每个文件不同。                  │
-├─────────────────────────────────────────────────────────────────┤
-│                         Nonce (12 字节)                          │
-│  每次加密随机生成。AES-GCM 初始化向量，确保相同明文每次密文不同。  │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│                       Ciphertext (变长)                          │
-│                      AES-256-GCM 加密后的密文                     │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│                      Authentication Tag (16 字节)                │
-│                      GMAC 认证标签，防篡改检测                     │
-└─────────────────────────────────────────────────────────────────┘
-```
+**Security note**: The salt is 32 random bytes generated uniquely per file. Even if two users have the same master password, their derived keys will be completely different.
 
-**master.verify：**
+#### AES-256-GCM — Data Encryption
 
-```
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-├─────────────────────────────────────────────────────────────────┤
-│                          Salt (32 字节)                          │
-│  与 vault.enc 中的 salt 相同。用于 Argon2id 密钥派生。            │
-├─────────────────────────────────────────────────────────────────┤
-│                     SHA-256(密钥) (32 字节)                      │
-│  派生密钥的 SHA-256 摘要。登录时比对，验证密码是否正确。           │
-└─────────────────────────────────────────────────────────────────┘
-```
+**Purpose**: Encrypt password entries and API keys at rest with authenticated encryption.
 
-> 注：`vault.enc` 和 `apikeys.enc` 使用**相同的派生密钥**（同一主密码 + 相同 salt）。所以修改主密码时两者都需要重新加密。
+**Why AES-256-GCM:**
+- **NIST standard** (FIPS PUB 197 / SP 800-38D)
+- **256-bit key**: Provides 2^256 possible keys — far beyond any conceivable brute-force capability. Even quantum computers using Grover's algorithm would reduce this to 2^128, still secure
+- **Authenticated Encryption (AEAD)**: GCM mode provides both **confidentiality** (nobody can read your data without the key) and **integrity** (nobody can tamper with your encrypted data without detection)
+- **Random nonce**: A fresh 12-byte random nonce is generated for every encryption operation. This means:
+  - Encrypting the same plaintext twice produces different ciphertext
+  - Nonce reuse resistance (our random generation makes collision negligible at 2^96 space)
+- **Built-in authentication tag**: The 16-byte GMAC tag detects any modification to the ciphertext. Decryption fails if the tag doesn't match
 
-### 会话密钥机制
+#### SHA-256 — Verification Tag
 
-密码不在前端停留，这是整个设计中最重要的安全决策：
+**Purpose**: Create a one-way fingerprint of the derived key for password verification.
+
+**Why SHA-256:**
+- **Collision-resistant**: No known practical collision attacks for SHA-256
+- **Deterministic**: Same key always produces the same tag
+- **Non-reversible**: The derived key cannot be recovered from the tag
+- **Fast computation**: But this speed doesn't weaken security because:
+  - The SHA-256 input is the **derived key** (already strengthened by Argon2id), not the raw password
+  - An attacker would need to brute-force the Argon2id output (~2^256 space), which is computationally infeasible
+
+### File Format Specification
+
+#### vault.enc / apikeys.enc
+
+Binary layout (big-endian):
 
 ```
-第一阶段 ── 登录 (只在解锁时执行一次)
-═══════════════════════════════════════════
-                    │ 用户输入 "bbkb"
-                    ▼
-┌─────────────────────────────────────────┐
-│ Rust 后端 session_login(password)       │
-│                                         │
-│  1. 读 master.verify → 取出 salt + 摘要  │
-│  2. Argon2id(password, salt) → 派生密钥  │
-│  3. SHA-256(派生密钥) 比对 master.verify │
-│  4. 一致 → 密码正确                      │
-│  5. 派生密钥 → 存 HashMap               │
-│     { session_id: "a1b2c3...", key }    │
-│  6. 返回 session_id 给前端              │
-└─────────────────────────────────────────┘
-                    │ 前端保存 session_id
-                    ▼
+Offset  Size  Field         Description
+─────────────────────────────────────────────────────────────
+ 0       32    salt          Random bytes for Argon2id derivation.
+                             Unique per file, generated on creation.
 
-第二阶段 ── 操作 (每次数据读写)
-═══════════════════════════════════════════
-                    │ 前端 invoke('vault_load',
-                    │       { sessionId: "a1b2c3..." })
-                    ▼
-┌─────────────────────────────────────────┐
-│ Rust 后端 vault_load(session_id)        │
-│                                         │
-│  1. HashMap.get(session_id) → 得到密钥  │
-│  2. 读 vault.enc → 跳过 salt(32B)      │
-│  3. AES-256-GCM 解密                    │
-│  4. 返回明文 JSON 给前端                │
-│                                         │
-│  注意: 不再跑 Argon2id，不再传密码       │
-└─────────────────────────────────────────┘
+32       12    nonce         AES-GCM initialization vector.
+                             Fresh random bytes per encryption.
+                             Ensures semantic security (same plaintext
+                             → different ciphertext).
 
-第三阶段 ── 锁定
-═══════════════════════════════════════════
-                    │ 前端调用 session_lock
-                    ▼
-┌─────────────────────────────────────────┐
-│ Rust 后端 session_lock(session_id)      │
-│                                         │
-│  HashMap.remove(session_id)             │
-│  → 派生密钥从内存消失                   │
-│  → 任何后续操作都返回                   │
-│    "未登录或会话已过期"                  │
-└─────────────────────────────────────────┘
+44       N     ciphertext    AES-256-GCM encrypted payload.
+                             Variable length. Contains JSON-serialized
+                             VaultFile or ApiKey array.
+
+44+N     16    tag           GMAC authentication tag.
+                             Verifies ciphertext integrity.
+                             Decryption fails if tag doesn't match.
 ```
 
-**为什么这比直接传密码好？**
+**Total minimum size**: 44 bytes (empty vault with minimum padding) + 16 byte tag = 60 bytes. Real vaults are larger due to JSON content.
 
-| 对比项 | 直接传密码 | 会话密钥 |
-|--------|-----------|---------|
-| 前端内存里有什么 | 密码明文 `"bbkb"` | 随机字符串 `"a1b2c3..."` |
-| 泄漏后果 | 密码被窃，所有数据可解密 | 需要同时拿到 session_id + 调用后端，但无法反推密码 |
-| 每次操作开销 | Argon2id (~300ms) | HashMap 查表 (~0.001ms) |
-| 锁定 = ? | 删前端变量（假的） | 后端删密钥（真的） |
-
-### 备份与导入的加密校验
-
-备份文件不是明文——它和密码库用的是同一套加密。所以"捡到备份文件"不等于"能看密码"：
+#### master.verify
 
 ```
-备份操作 (备份到指定目录):
-  源文件: vault.enc (AES-256-GCM 加密)
-  操作:  直接复制到备份目录/vault-20260701.enc
-  安全性: 文件本身就是加密的，没有主密码谁也解不开
+Offset  Size  Field         Description
+─────────────────────────────────────────────────────────────
+ 0       32    salt          Same salt as vault.enc.
+                             Ensures the derived key is identical
+                             for both verification and decryption.
 
-导入操作 (从备份文件恢复):
-  用户选文件 → 输入该文件对应的主密码
-  ┌────────────────────────────────────────┐
-  │ Rust 后端 import_from_file(path, pwd) │
-  │                                        │
-  │  1. 读 .enc 文件 → 取出 salt + 密文    │
-  │  2. Argon2id(pwd, salt) → 派生密钥    │
-  │  3. AES-256-GCM 解密                   │
-  │  4. 解密失败 → "密码错误" ❌            │
-  │  5. 解密成功 → 验证是 JSON 格式        │
-  │  6. 复制到 ~/.key-vault/vault.enc     │
-  │  7. "导入成功" ✅                      │
-  └────────────────────────────────────────┘
+32       32    tag           SHA-256(derived key).
+                             Stored during first-time setup.
+                             Compared on login to verify password.
 ```
 
-**关键保护点**：第 4 步——不知道密码的人连导入这关都过不了，根本到不了解密那一步。
+### Session Key Mechanism
 
-### 前端安全措施
+This is the most important security design decision in the application. The master password **never** resides in frontend memory after login. Here is the complete flow:
 
-| 措施 | 实现方式 | 目标 |
-|------|---------|------|
-| 密码不存前端 | 登录后只保留 `session_id`，密码从 Rust 内存中丢弃 | 防止 XSS/内存 dump 窃取密码 |
-| 防截屏 | `getCurrentWindow().setContentProtected(true)` | 阻止恶意程序截屏窃取显示中的密码 |
-| 防中文输入 | CSS `ime-mode: disabled` + HTML `spellcheck="false"` | 防止输入法干扰导致密码错误 |
-| 自动锁定 | `setTimeout` 监听 mousedown/keydown/wheel/touchstart | 用户离开后自动保护 |
-| 活动追踪 | 重置计时器，永不停止追踪 | 精确计算无操作时间 |
-| 独立锁定 | 密码库/API 密钥可分别 UI 锁定 | 分模块保护，互不影响 |
+```
+Phase 1 — Login (executed once, on unlock)
+═══════════════════════════════════════════════════════════════
 
-### 攻击面分析
+User Action:
+  Enters master password in the LockScreen UI
+       │  invoke('session_login', { password: "bbkb" })
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Rust Backend — session::SessionManager::login()              │
+│                                                               │
+│  1. Read ~/.key-vault/master.verify                           │
+│     → Extract salt (bytes 0-31) and stored_tag (bytes 32-63) │
+│                                                               │
+│  2. Key derivation:                                           │
+│     derived_key = Argon2id(password, salt,                     │
+│                          memory=64MB, iterations=3)           │
+│                                                               │
+│  3. Verification:                                             │
+│     computed_tag = SHA-256(derived_key)                       │
+│     if computed_tag ≠ stored_tag → return Err("密码错误")     │
+│                                                               │
+│  4. Session creation:                                         │
+│     session_id = UUIDv4()  // e.g. "a1b2c3d4-e5f6-..."      │
+│     sessions: HashMap::insert(session_id, SessionData {       │
+│         key: derived_key,                                     │
+│         created_at: Instant::now(),                           │
+│     })                                                        │
+│                                                               │
+│  5. Return session_id to frontend                             │
+│     // derived_key stays in Rust heap, never crosses IPC     │
+└──────────────────────────────────────────────────────────────┘
+       │  Frontend stores session_id in Pinia store
+       │  Master password is immediately discarded from JS memory
+       ▼
 
-| 攻击场景 | 能否得手 | 详细原因 |
-|---------|---------|---------|
-| 物理窃取 U 盘，读取 vault.enc | ❌ 不能 | AES-256-GCM 加密，无密钥无法解密。密钥来自主密码 + Argon2id，不可直接获取 |
-| 暴力破解主密码 | ❌ 极难 | Argon2id 内存硬 (64MB)，单次约 300ms。8 位混合密码空间 ~6×10^15，需要数百万年 |
-| 量子计算机攻击 AES-256 | ❌ 不能 | AES-256 抗量子攻击，Grover 算法也只能将安全级降为 128 位，依然安全 |
-| DMA 攻击读取 Rust 堆内存 | ⚠️ 有条件 | 需要物理访问 + 特定硬件。Windows 10+ 有 Kernel DMA Protection，已缓解 |
-| 截屏/录屏捕获密码数据 | ❌ 不能 | `setContentProtected(true)` 启用后所有屏幕捕获返回黑色 |
-| 窃取 session_id | ⚠️ 风险低 | 仅凭 session_id 无法解密，需同时接触运行中的 Rust 进程。且 session 会过期 |
-| 窃取备份文件 | ❌ 不能 | 导入需校验备份文件的原始主密码，解密失败则拒绝导入 |
-| 读取前端 JS 变量 | ❌ 不能 | session_id 无法反推密码，过期即废弃 |
-| 物理接触已解锁程序 | ⚠️ 自动锁定保护 | 离开无操作达到设定时间后自动锁定 |
+Phase 2 — Operations (every read/write)
+═══════════════════════════════════════════════════════════════
+
+User Action:
+  Browses vault or views API keys
+       │  invoke('vault_load', { sessionId: "a1b2c3d4-..." })
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Rust Backend — vault_load(session_id)                        │
+│                                                               │
+│  1. Lookup:                                                   │
+│     key = sessions.get(session_id)?.key                       │
+│     if not found → return Err("未登录或会话已过期")           │
+│                                                               │
+│  2. Read vault.enc from disk                                  │
+│     → Skip first 32 bytes (salt, retained for format compat) │
+│                                                               │
+│  3. Decrypt:                                                  │
+│     plaintext = AES-256-GCM::decrypt(encrypted_data, key)     │
+│                                                               │
+│  4. Deserialize:                                              │
+│     entries = serde_json::from_slice(plaintext)                │
+│                                                               │
+│  5. Return entries to frontend                                │
+│     // No Argon2id is run during this phase                   │
+│     // No password crosses the IPC boundary                   │
+└──────────────────────────────────────────────────────────────┘
+       │  Frontend displays the decrypted entries
+       ▼
+
+Phase 3 — Locking (on demand or auto-lock timer)
+═══════════════════════════════════════════════════════════════
+
+Trigger:
+  User clicks "Lock" or inactivity timer expires
+       │  invoke('session_lock', { sessionId: "a1b2c3d4-..." })
+       │  or frontend clears sessionId and calls logout()
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ Rust Backend — session::SessionManager::lock(session_id)     │
+│                                                               │
+│  sessions.remove(session_id)                                  │
+│  → The HashMap entry is deleted                               │
+│  → The derived_key Vec<u8> is dropped (memory freed)          │
+│  → Any subsequent operation with this session_id returns      │
+│    Err("未登录或会话已过期")                                  │
+│                                                               │
+│  Coup de grâce: the cryptographic key is gone from RAM        │
+└──────────────────────────────────────────────────────────────┘
+       │  Frontend clears sessionId, navigates to LockScreen
+       ▼
+```
+
+**Why sessions are superior to passing raw passwords:**
+
+| Aspect | Raw Password | Session Key |
+|--------|-------------|-------------|
+| Frontend memory contains | Plaintext `"bbkb"` | Opaque `"a1b2c3d4-..."` UUID |
+| Leakage impact | Complete compromise — password can decrypt everything | Must simultaneously compromise Rust heap + frontend, and session expires |
+| Per-operation cost | Argon2id (~300ms, intentional slow hash) | HashMap lookup (~0.001ms) |
+| Locking semantics | Simulate by deleting JS variable (client-side only) | Delete key from Rust HashMap (actual cryptographic lock) |
+| Password change impact | Must re-encrypt everything with new Argon2id derivation | Same — but only happens once, and old session immediately invalidated |
+
+### Backup & Import Encryption
+
+Backup files use the same encryption as the live vault — they **are** the vault file, just in a different directory. This means "finding a backup file" is not the same as "reading someone's passwords":
+
+```
+Backup Flow (export):
+  vault.enc ──file copy──→ backup_dir/vault-20260701.enc
+  ↑ The file is ALREADY encrypted with AES-256-GCM.
+    No additional encryption step needed.
+
+Restore Flow (import from backup directory):
+  ┌──────────────────────────────────────────────┐
+  │  Requires: USB device authorization only      │
+  │  Copies file back from backup_dir             │
+  │  File remains encrypted — requires            │
+  │  the master password to decrypt               │
+  └──────────────────────────────────────────────┘
+
+Import Flow (from arbitrary file):
+  ┌──────────────────────────────────────────────┐
+  │  1. User selects a .enc file                  │
+  │  2. User enters the master password that      │
+  │     was used to CREATE that backup            │
+  │                                               │
+  │  3. Backend: import_from_file(filePath, pwd)  │
+  │     a. Read file → extract salt + encrypted   │
+  │     b. Derive key = Argon2id(pwd, salt)       │
+  │     c. Try AES-256-GCM decryption             │
+  │     d. If decryption fails →                  │
+  │        "密码错误，无法导入备份文件" ❌         │
+  │     e. If decryption succeeds →               │
+  │        validate JSON structure                │
+  │        copy to ~/.key-vault/vault.enc         │
+  │        "导入成功" ✅                          │
+  └──────────────────────────────────────────────┘
+```
+
+**Security guarantee**: Without the correct master password, an attacker cannot even pass the import gate. The decryption attempt (step 3c) serves as both verification and access control. The file is never written to the vault location unless decryption succeeds.
+
+### Frontend Security Measures
+
+| Measure | Implementation | What It Prevents |
+|---------|---------------|------------------|
+| Password-free frontend | Only `sessionId` stored after login; password discarded from JS heap | XSS, memory dump, or devtools inspection cannot steal the master password |
+| Screenshot protection | `getCurrentWindow().setContentProtected(true)` (Tauri API) | Malware capturing screen contents via PrintScreen, Snipping Tool, or DXGI/DDA APIs |
+| IME blocking | CSS `ime-mode: disabled` + `spellcheck="false"` | Chinese/Japanese IME interference causing incorrect password entry |
+| Inactivity auto-lock | `setTimeout` per user activity event (mousedown, keydown, touchstart, wheel) | Unattended terminal accessible to others after you step away |
+| Activity debounce | Timer resets on every activity event | Accurate idle time measurement without false positives |
+| Independent locking | Separate Boolean flags for vault vs. API keys | Granular access control — hide API keys while showing vault entries |
+
+### Threat Model & Attack Surface Analysis
+
+| Attack Vector | Outcome | Reasoning |
+|--------------|---------|-----------|
+| **Physical USB theft, reading vault.enc** | ❌ Protected | AES-256-GCM with Argon2id-derived key. Without the master password, the ciphertext is computationally indistinguishable from random noise |
+| **Master password brute-force** | ❌ Infeasible | Argon2id memory-hardness (64MB memory, 3 iterations): ~300ms per attempt. An 8-character mixed-case alphanumeric password (62^8 ≈ 2.18×10^14) exceeds the age of the universe to exhaust |
+| **Quantum computer attack on AES-256** | ❌ Not vulnerable | AES-256's post-quantum security is ~2^128 (Grover's algorithm halves the key space). Still beyond any practical capability |
+| **DMA attack reading Rust heap** | ⚠️ Hard | Requires physical PCIe/eSATA access. Windows 10+ includes Kernel DMA Protection by default on modern hardware |
+| **Screen capture of decrypted data** | ❌ Blocked | `SetWindowDisplayAffinity(WDA_MONITOR)` prevents any screen capture API from reading the window content |
+| **Session ID theft** | ⚠️ Low impact | Session ID alone cannot derive the master password or decrypt data. Attacker would need to simultaneously compromise the running Rust process. Sessions expire on lock |
+| **Backup file theft** | ❌ Protected | Import requires the backup's original master password. AES-GCM decryption failure immediately rejects the file |
+| **Frontend JS variable inspection** | ❌ Low risk | Only `sessionId` is exposed. No keys or passwords present in JS memory during normal operation |
+| **Physical access to unlocked app** | ⚠️ Mitigated | Auto-lock timer returns to lock screen after configurable inactivity period. Default: 5 minutes |
+| **Log file containing passwords** | ⚠️ Debug builds only | `tauri_plugin_log` is enabled only in debug builds. Production builds disable logging by default |
 
 ---
 
-## 🏗️ 技术架构
+## 🏗️ Technical Architecture
 
-### 系统架构
+### System Overview
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│                Tauri v2 桌面应用                            │
-│                                                            │
-│  ┌─────────────────────┐      ┌─────────────────────────┐  │
-│  │   Vue.js 3 前端      │      │     Rust 后端            │  │
-│  │                      │      │                         │  │
-│  │   Pinia 状态管理     │      │  SessionManager         │  │
-│  │   Vue Router         │◄─IPC─│  (密钥缓存)              │  │
-│  │   Naive UI           │      │                         │  │
-│  │   Vite (HMR)         │      │  crypto.rs              │  │
-│  │                      │      │  vault.rs / api_keys.rs │  │
-│  │   组件层              │      │  backup.rs / auth.rs    │  │
-│  │   视图层              │      │  config.rs / sha_pin.rs │  │
-│  └─────────────────────┘      └─────────────────────────┘  │
-└────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Tauri v2 Desktop Application                      │
+│                                                                     │
+│  ┌────────────────────────────┐    ┌────────────────────────────┐  │
+│  │   Vue.js 3 Frontend         │    │   Rust Backend             │  │
+│  │   (TypeScript)              │    │                            │  │
+│  │                              │    │  SessionManager           │  │
+│  │   Pinia (state)             │    │  ┌──────────────────┐     │  │
+│  │   Vue Router (routing)      │◄──►│  │Mutex<HashMap<    │     │  │
+│  │   Naive UI (components)     │ IPC │  │  String, Vec<u8> │     │  │
+│  │   Vite (bundler + HMR)      │    │  └──────────────────┘     │  │
+│  │                              │    │  crypto.rs               │  │
+│  │  Components Layer            │    │  vault.rs / api_keys.rs │  │
+│  │   ├─ LockScreen.vue         │    │  backup.rs / auth.rs     │  │
+│  │   ├─ VaultView.vue          │    │  config.rs / sha_pin.rs │  │
+│  │   ├─ ApiKeysView.vue        │    └────────────────────────────┘  │
+│  │   └─ SettingsView.vue       │                                    │
+│  └────────────────────────────┘                                    │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-前后端严格分离：
-- **前端**（Vue.js 3）— 界面渲染、用户交互、状态管理
-- **后端**（Rust）— 所有加密操作、文件 I/O、会话管理
-- **通信** — Tauri IPC（序列化为 JSON，类型安全）
-- **核心决策**：加密密钥**永不**跨越 IPC 边界，只存在 Rust 进程堆中
+**Architecture Decision: Strict Separation of Concerns**
 
-### 核心 Rust 模块详解
+The frontend and backend communicate exclusively through Tauri's IPC mechanism (serialized JSON commands). The cryptographic key **never** crosses this boundary:
 
-| 模块 | 职责 | 关键公开函数 | 依赖 |
-|------|------|-------------|------|
-| **`session.rs`** | 用户会话管理，密钥生命周期 | `login()` `lock()` `get_key()` `change_password()` | `sha2`, `uuid` |
-| **`crypto.rs`** | 所有加密原语 | `derive_key()` `encrypt()` `decrypt()` `generate_salt()` | `aes-gcm`, `argon2`, `rand` |
-| **`vault.rs`** | 密码库对象持久化 | `load_vault(path, key)` `save_vault(path, vault, key)` | `serde_json` |
-| **`api_keys.rs`** | API 密钥对象持久化 | `load_keys(path, key)` `save_keys(keys, path, key)` | `serde_json` |
-| **`backup.rs`** | 备份文件管理 | `backup_vault()` `restore_vault()` `list_backups()` | `chrono` |
-| **`auth.rs`** | USB 设备认证（备份授权） | `is_authorized()` `generate_key()` | `rand`, `hex` |
-| **`config.rs`** | JSON 配置读写 | `load_config()` `save_config()` | `serde_json` |
-| **`sha_pin.rs`** | 确定性密码生成算法 | `compute_with_len()` | `sha2` |
+| Component | Responsibilities | Runs In | Security Domain |
+|-----------|----------------|---------|-----------------|
+| Frontend | Rendering, user input, navigation | WebView (Chromium) | Untrusted (by design) |
+| Backend | All crypto, file I/O, session mgmt | Native Rust process | Trusted (isolated) |
 
-### 目录结构
+This design ensures that even if the WebView is compromised (e.g., via a dependency vulnerability), the attacker cannot access cryptographic keys or encrypted data directly — they would need a separate privilege escalation to the Rust process.
+
+### Core Rust Module Reference
+
+| Module | File | Public API | Dependencies | Thread Safety |
+|--------|------|-----------|--------------|---------------|
+| **session** | `session.rs` | `login(password) → Result<String>` `lock(session_id)` `get_key(session_id) → Option<Vec<u8>>` `change_password(sid, old, new) → Result<String>` `is_active(session_id) → bool` | `sha2`, `uuid`, `std::sync::Mutex` | ✅ `Mutex<HashMap>` |
+| **crypto** | `crypto.rs` | `derive_key(password, salt) → Vec<u8>` `encrypt(plaintext, key) → Vec<u8>` `decrypt(data, key) → Result<Vec<u8>>` `generate_salt() → Vec<u8>` | `aes-gcm`, `argon2`, `password-hash`, `rand` | ✅ Pure functions |
+| **vault** | `vault.rs` | `load_vault(path, key) → Result<VaultFile>` `save_vault(path, vault, key) → Result<()>` | `serde`, `serde_json` | ✅ Pure functions |
+| **api_keys** | `api_keys.rs` | `load_keys(path, key) → Result<Vec<ApiKey>>` `save_keys(keys, path, key) → Result<()>` | `serde`, `serde_json` | ✅ Pure functions |
+| **backup** | `backup.rs` | `backup_vault(vault_path, backup_root) → Result<String>` `restore_vault(target, backup_root, filename) → Result<()>` `list_backups(backup_root) → Result<Vec<String>>` | `chrono`, `std::fs` | ✅ Stateless |
+| **auth** | `auth.rs` | `is_authorized() → bool` `generate_key() → Result<()>` `remove_auth() → Result<()>` (+ `_with_path` variants) | `rand`, `hex` | ✅ Stateless |
+| **config** | `config.rs` | `load_config(path) → AppConfig` `save_config(path, config) → Result<()>` | `serde`, `serde_json` | ✅ Stateless |
+| **sha_pin** | `sha_pin.rs` | `compute_with_len(input1, input2, len) → Result<(String,String,String)>` | `sha2` | ✅ Pure functions |
+
+### Complete Directory Reference
 
 ```
 kay-vault/
 │
-├── src/                          ← Vue.js 3 前端 (TypeScript)
-│   ├── App.vue                   ← 根组件：锁屏/侧栏/统计/防截屏/自动锁定
-│   ├── main.ts                   ← Vue 应用入口
-│   ├── env.d.ts                  ← TypeScript 类型声明
+├── src/                          ← Vue.js 3 Frontend (TypeScript)
+│   ├── App.vue                   ← Root component: lock screen, sidebar,
+│   │                                stats panel, screenshot protection,
+│   │                                auto-lock timer
+│   ├── main.ts                   ← Vue application entry point
+│   ├── env.d.ts                  ← TypeScript ambient declarations
 │   │
 │   ├── router/
-│   │   └── index.ts              ← 路由配置（vault/api-keys/terminal/settings）
+│   │   └── index.ts              ← Route definitions: vault, api-keys,
+│   │                                terminal, settings
 │   │
-│   ├── stores/                   ← Pinia 状态管理
-│   │   ├── app.ts                ← 应用级状态：sessionId、锁定开关、登录/登出
-│   │   └── vault.ts              ← 密码库数据：条目列表、搜索过滤、CRUD 操作
+│   ├── stores/                   ← Pinia state management
+│   │   ├── app.ts                ← Application state: sessionId,
+│   │   │                            unlock/lock flags, autoLockMinutes,
+│   │   │                            login()/logout() methods
+│   │   └── vault.ts              ← Vault data: entries array,
+│   │                                search/filter, tree structure,
+│   │                                CRUD operations
 │   │
-│   ├── views/                    ← 页面视图（路由级别组件）
-│   │   ├── VaultView.vue         ← 密码库主页：树状分组 + 卡片列表 + 搜索
-│   │   ├── ApiKeysView.vue       ← API 密钥管理：按提供商分组 + 内联编辑
-│   │   ├── TerminalView.vue      ← SHA-PIN 终端：标识输入 + 双向链输出
-│   │   └── SettingsView.vue      ← 设置页：自动锁定/备份路径/改密码/设备认证
+│   ├── views/                    ← Route-level page components
+│   │   ├── VaultView.vue         ← Password vault: tree navigation
+│   │   │                            (group → category → entries),
+│   │   │                            card list with copy/search
+│   │   ├── ApiKeysView.vue       ← API key management: provider
+│   │   │                            grouping, inline editing,
+│   │   │                            key masking/reveal, copy
+│   │   ├── TerminalView.vue      ← SHA-PIN terminal: prompt-based
+│   │   │                            interaction, result display
+│   │   └── SettingsView.vue      ← Settings: auto-lock duration,
+│   │                                backup path selection (native
+│   │                                folder picker), password change,
+│   │                                USB authentication, backup panel
 │   │
-│   ├── components/               ← 可复用组件
-│   │   ├── LockScreen.vue        ← 锁屏：密码输入 + 校验 + 警告提示
-│   │   ├── PasswordForm.vue      ← 密码编辑弹窗：表单验证
-│   │   ├── PasswordCard.vue      ← 密码卡片：展示/复制/显示隐藏
-│   │   ├── PasswordGenerator.vue ← 随机密码生成器：长度/字符集配置
-│   │   ├── BackupPanel.vue       ← 备份操作面板：备份/还原/导入
-│   │   └── DeviceAuthList.vue    ← USB 设备认证：添加/移除
+│   ├── components/               ← Reusable UI components
+│   │   ├── LockScreen.vue        ← Master password entry + warning
+│   │   ├── PasswordForm.vue      ← Entry creation/editing form
+│   │   ├── PasswordCard.vue      ← Entry display card
+│   │   ├── PasswordGenerator.vue ← Random password generator
+│   │   ├── BackupPanel.vue       ← Backup/Restore/Import UI
+│   │   └── DeviceAuthList.vue    ← USB authentication management
 │   │
 │   └── styles/
-│       └── theme.css             ← 全局主题：CSS 变量（颜色/字体/圆角）
+│       └── theme.css             ← CSS custom properties (colors,
+│                                    fonts, border radii, spacing)
 │
-├── src-tauri/                    ← Rust 后端
+├── src-tauri/                    ← Rust Backend
 │   ├── src/
-│   │   ├── main.rs               ← Tauri 入口点
-│   │   ├── lib.rs                ← 命令注册、路径管理、Tauri Builder 配置
-│   │   ├── session.rs            ← 会话管理器
-│   │   ├── crypto.rs             ← 加密原语
-│   │   ├── vault.rs              ← 密码库持久化
-│   │   ├── api_keys.rs           ← API 密钥持久化
-│   │   ├── auth.rs               ← 设备认证
-│   │   ├── backup.rs             ← 备份还原
-│   │   ├── config.rs             ← 配置读写
-│   │   └── sha_pin.rs            ← SHA-PIN 算法
+│   │   ├── main.rs               ← Tauri entry point (cfg_attr mobile)
+│   │   ├── lib.rs                ← Tauri command registration,
+│   │   │                            path management, Builder setup,
+│   │   │                            disk statistics, URL opener,
+│   │   │                            all #[tauri::command] functions
+│   │   ├── session.rs            ← SessionManager: login verification
+│   │   │                            (Argon2id + SHA-256), key caching
+│   │   │                            (HashMap), lock/change_password
+│   │   ├── crypto.rs             ← Cryptographic primitives
+│   │   ├── vault.rs              ← Vault file I/O + structs
+│   │   ├── api_keys.rs           ← API key file I/O + structs
+│   │   ├── auth.rs               ← USB device authentication
+│   │   ├── backup.rs             ← Backup/restore directory ops
+│   │   ├── config.rs             ← AppConfig struct + JSON I/O
+│   │   └── sha_pin.rs            ← SHA-PIN algorithm implementation
 │   │
-│   ├── Cargo.toml                ← Rust 依赖（tauri, aes-gcm, argon2, sha2 等）
-│   ├── tauri.conf.json           ← Tauri 应用配置（窗口/签名/安全策略）
-│   ├── build.rs                  ← 构建脚本
-│   └── capabilities/default.json ← Tauri 权限配置
+│   ├── Cargo.toml                ← Rust dependencies
+│   ├── tauri.conf.json           ← Tauri build/window/security config
+│   ├── build.rs                  ← Tauri build script
+│   └── capabilities/
+│       └── default.json          ← Tauri v2 capability permissions
 │
 ├── docs/
-│   └── encryption-design.md      ← 加密架构详细文档
+│   └── encryption-design.md      ← Full encryption architecture doc
 │
-├── 启动-调试程序.bat              ← Windows 一键启动脚本
-├── package.json                  ← Node.js 依赖与脚本
-├── vite.config.ts                ← Vite 打包配置
-├── tsconfig.json                 ← TypeScript 配置（根）
-├── tsconfig.app.json             ← TypeScript 配置（应用）
-├── tsconfig.node.json            ← TypeScript 配置（Node 环境）
-└── .gitignore                    ← Git 忽略规则
+├── 启动-调试程序.bat              ← Windows dev launcher script
+├── package.json                  ← Node.js dependencies & scripts
+├── vite.config.ts                ← Vite bundler configuration
+├── tsconfig.json                 ← TypeScript config (root)
+├── tsconfig.app.json             ← TypeScript config (app code)
+├── tsconfig.node.json            ← TypeScript config (build scripts)
+└── .gitignore                    ← Git exclusion rules
 ```
 
-### 技术栈
+### Technology Stack
 
-| 层次 | 技术 | 版本 | 用途 |
-|------|------|------|------|
-| 前端框架 | Vue.js 3 | ^3.5 | 响应式 UI |
-| 构建工具 | Vite | ^8.1 | 开发服务器 + 打包 |
-| 类型系统 | TypeScript | ~6.0 | 类型安全 |
-| UI 组件库 | Naive UI | ^2.44 | 深色主题组件 |
-| 状态管理 | Pinia | ^3.0 | 前端状态 |
-| 路由 | Vue Router | ^4.6 | SPA 路由 |
-| 桌面框架 | Tauri v2 | ^2.11 | 原生窗口 + IPC |
-| 后端语言 | Rust | 2021 | 加密 + 文件 I/O |
-| 加密算法 | AES-256-GCM | 0.10 | 数据加密 |
-| 密钥派生 | Argon2 | 0.5 | 密码→密钥 |
-| 哈希 | SHA-2 | 0.10 | 校验标签 |
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| Frontend Framework | Vue.js 3 | ^3.5 | Reactive UI with Composition API |
+| Build Tool | Vite | ^8.1 | Dev server with HMR, production bundling |
+| Type System | TypeScript | ~6.0 | Static type checking |
+| UI Component Library | Naive UI | ^2.44 | Dark-theme Vue 3 components |
+| State Management | Pinia | ^3.0 | Type-safe store |
+| Routing | Vue Router | ^4.6 | SPA navigation |
+| Desktop Framework | Tauri v2 | ^2.11 | Native window, IPC, system integration |
+| Backend Language | Rust | 2021 edition | Memory-safe systems programming |
+| Block Cipher | AES-256-GCM | 0.10 | Authenticated encryption (NIST SP 800-38D) |
+| Key Derivation | Argon2 | 0.5 | Memory-hard password hashing |
+| Hashing | SHA-2 | 0.10 | Verification tag generation |
+| Serialization | Serde JSON | 1.0 | Structured data I/O |
+| UUID | uuid | 1.0 (v4) | Session identifier generation |
 
 ---
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 系统要求
+### Prerequisites
 
-| 依赖 | 最低版本 | 用途 |
-|------|---------|------|
-| Windows | 10+ | 当前目标平台（macOS/Linux 开发中） |
-| Node.js | 18+ | 前端构建与开发服务器 |
-| Rust | 1.77+ | 后端编译 |
-| Cargo 系统依赖 | — | [Tauri v2 系统依赖](https://v2.tauri.app/start/prerequisites/) |
+| Dependency | Minimum Version | Purpose |
+|-----------|----------------|---------|
+| Windows | 10+ | Target platform (macOS/Linux support planned) |
+| Node.js | 18+ | Frontend build toolchain |
+| Rust | 1.77+ | Backend compilation |
+| System Libraries | — | [Tauri v2 Prerequisites](https://v2.tauri.app/start/prerequisites/) |
 
-### 从源码构建
+### Build from Source
 
 ```bash
-# 1. 克隆仓库
+# 1. Clone the repository
 git clone https://github.com/O-My-PCCCCCCCCCC/kay-vault.git
 cd kay-vault
 
-# 2. 安装前端依赖
+# 2. Install frontend dependencies
 npm install
 
-# 3. 开发模式（Vite + Tauri 同时启动，支持热重载）
+# 3. Start development mode (Vite + Tauri with hot reload)
 npm run tauri dev
-# 这将会：
-#   - 启动 Vite 开发服务器 (http://localhost:5173)
-#   - 编译 Rust 后端（首次约 2-3 分钟）
-#   - 打开 Tauri 原生窗口
+# This will:
+#   - Start the Vite dev server at http://localhost:5173
+#   - Compile the Rust backend (first build: ~2-3 minutes)
+#   - Open a native Tauri window
 
-# 4. 生产构建
+# 4. Production build
 npm run tauri build
-# 输出到 src-tauri/target/release/bundle/
+# Output: src-tauri/target/release/bundle/
 ```
 
-### 快速启动（调试用）
+### Windows Debug Launcher
 
-Windows 下双击 **`启动-调试程序.bat`**：
+Double-click **`启动-调试程序.bat`** in the project root:
 
 ```
 ============================================
   * 凯伊密码管家 - 开发调试模式
 ============================================
 
-[1/3] 清理残留进程...       ← 自动关掉旧的 Vite + 窗口
-[2/3] 检查依赖...           ← 检测 node_modules
+[1/3] 清理残留进程...       ← Auto-kills old Vite + app windows
+[2/3] 检查依赖...           ← Checks node_modules, auto-installs
 [3/3] 启动 Tauri...
 
   前端端口: http://localhost:5173
 
-→ 调试完毕按 Ctrl+C 停止
-→ 按任意键关闭窗口
+→ Press Ctrl+C to stop debugging
+→ Press any key to close window
 ```
 
-### 开发命令参考
+### Development Commands
 
 ```bash
-npm run dev          # 仅启动前端（Vite 开发服务器，无 Tauri）
-npm run build        # TypeScript 类型检查 + 前端生产构建
-npm run preview      # 预览构建产物
-npm run type-check   # TypeScript 类型检查（不构建）
-npm run tauri dev    # Tauri 开发模式（前端 + 后端）
-npm run tauri build  # Tauri 生产构建
+npm run dev          # Start Vite frontend only (no Tauri window)
+npm run build        # TypeScript type check + frontend production build
+npm run preview      # Preview production build output
+npm run type-check   # TypeScript type check only (no build)
+npm run tauri dev    # Full Tauri dev mode (frontend + backend)
+npm run tauri build  # Production build (installer package)
 ```
 
-### 分支说明
+### Branch Strategy
 
-| 分支 | 用途 | 状态 |
-|------|------|------|
-| `main` | 稳定版本，生产构建 | ✅ 可用 |
-| `feat/terminal-and-api` | 当前开发分支，SHA-PIN 终端 + API 密钥管理 | 🚧 活跃开发 |
-| `master` | 原默认分支（旧仓库遗留），内容同 `main` | 📦 存档 |
-
----
-
-## 📄 许可证
-
-本项目采用 [MIT 许可证](LICENSE)。
+| Branch | Purpose | Status |
+|--------|---------|--------|
+| `main` | Stable releases, production builds | ✅ Active |
+| `feat/terminal-and-api` | Active development: SHA-PIN terminal, API key management | 🚧 In development |
+| `master` | Legacy default (from original repo), synced with `main` | 📦 Archived |
 
 ---
 
-*由 [追寻光的影](https://github.com/O-My-PCCCCCCCCCC) 制作 · 2026*
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+*Created by [追寻光的影](https://github.com/O-My-PCCCCCCCCCC) · 2026*
