@@ -122,7 +122,8 @@ const filtered = computed(() => {
     k.name.toLowerCase().includes(l) ||
     k.provider.toLowerCase().includes(l) ||
     k.key.toLowerCase().includes(l) ||
-    k.base_url.toLowerCase().includes(l)
+    k.base_url.toLowerCase().includes(l) ||
+    (k.notes || '').toLowerCase().includes(l)
   )
 })
 const groups = computed(() => { const m = new Map<string,AK[]>(); for (const k of filtered.value) { const p = k.provider||'其他'; if (!m.has(p)) m.set(p,[]); m.get(p)!.push(k) }; return Array.from(m).map(([p,items])=>({p,items})) })
@@ -132,7 +133,11 @@ const items = computed(() => { if (sv.value==='all') return filtered.value; for 
 const sr = computed(() => {
   if (!q.value) return []
   const l = q.value.toLowerCase()
-  return keys.value.map((k,i)=>[k,i] as [AK,number]).filter(([k])=>k.name.toLowerCase().includes(l)||k.provider.toLowerCase().includes(l)).map(([k,idx])=>({name:k.name,provider:k.provider,idx}))
+  return keys.value.map((k,i) => [k,i] as [AK,number]).filter(([k]) =>
+    k.name.toLowerCase().includes(l) ||
+    k.provider.toLowerCase().includes(l) ||
+    (k.notes || '').toLowerCase().includes(l)
+  ).slice(0,20).map(([k,idx]) => ({name:k.name, provider:k.provider, idx}))
 })
 
 function hl(text: string): string {
