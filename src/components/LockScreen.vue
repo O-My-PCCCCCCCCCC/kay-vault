@@ -1,7 +1,7 @@
 <template>
   <div class="lock-screen">
     <div class="lock-card">
-      <div class="logo">🔑</div>
+      <div class="logo"><img src="/icons/app.png" class="lock-icon" /></div>
       <h2>凯伊密码管家</h2>
       <p class="subtitle">插入钥匙以继续</p>
       <div class="warning-banner">
@@ -77,10 +77,8 @@ async function unlock() {
   border: 1px solid var(--border);
   text-align: center;
 }
-.logo {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
+.logo { margin-bottom: 16px; }
+.lock-icon { width: 64px; height: 64px; border-radius: 16px; }
 .subtitle {
   color: var(--text-secondary);
   margin: 8px 0 24px;
