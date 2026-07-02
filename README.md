@@ -590,3 +590,12 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 *Created by [追寻光的影](https://github.com/O-My-PCCCCCCCCCC) · 2026*
+
+---
+
+> 💬 **作者的话**
+>
+> 本项目由 AI 辅助编程完成。作者现在准初三了，受限于经费、时间和精力，
+> 维护和更新速度可能会大幅延长，还请谅解。
+>
+> 如果这个项目能帮到你，那么请问喝瓶魔爪吧，谢谢 (｡•̀ᴗ-)✧
