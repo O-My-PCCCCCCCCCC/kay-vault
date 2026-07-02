@@ -81,12 +81,16 @@ function fmtSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+let lastStatsRefresh = 0
 async function refreshStats() {
   if (!appStore.sessionId) return
+  const now = Date.now()
+  if (now - lastStatsRefresh < 10000) return // 10 秒内不重复请求
+  lastStatsRefresh = now
   try {
     stats.value = await invoke('get_stats', { sessionId: appStore.sessionId })
   } catch {
-    // 忽略，下次切换页面时再试
+    lastStatsRefresh = 0 // 失败了下一次再试
   }
 }
 
