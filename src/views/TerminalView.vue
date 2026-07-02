@@ -6,8 +6,8 @@
     <!-- 输入区 -->
     <div class="term-input">
       <div class="line"><span class="p">┌──(<span class="pu">guest</span>@<span class="ph">pin</span>)<span class="pd">-</span>[<span class="pp">~</span>]</span></div>
-      <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--标识</span> <input v-model="i1" class="ti" placeholder="github.com" @keyup.enter="f2" :disabled="busy" /></div>
-      <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--主密码</span> <input ref="p2" v-model="i2" :type="sp ? 'text' : 'password'" class="ti" placeholder="********" @keyup.enter="run" :disabled="busy" /> <span class="eye" @click="sp = !sp">{{ sp ? '🙈' : '👁' }}</span></div>
+      <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--输入A</span> <input v-model="i1" class="ti" placeholder="输入A" @keyup.enter="f2" :disabled="busy" /></div>
+      <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--输入B</span> <input ref="p2" v-model="i2" :type="sp ? 'text' : 'password'" class="ti" placeholder="········" @keyup.enter="run" :disabled="busy" /> <span class="eye" @click="sp = !sp">{{ sp ? '🙈' : '👁' }}</span></div>
       <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--位数</span> <span class="lo" :class="{on:len===4}" @click="len=4">4</span><span class="lo" :class="{on:len===6}" @click="len=6">6</span><span class="lo" :class="{on:len===8}" @click="len=8">8</span> <span class="ll">位</span></div>
       <div class="line"><span class="p">└─<span class="ps">$</span></span> <button class="btn" @click="run" :disabled="busy||!i1||!i2">{{ busy ? '⏳' : '▶' }} 生成</button> <button class="btn sec" @click="clr">✕ 清</button></div>
     </div>
@@ -18,15 +18,15 @@
       <div class="ol od">SHA-256 双向链 · 三重指纹 · 聚合加密 密码生成器</div>
       <div v-if="shown" class="or">
         <div class="ol os">──────────────────────</div>
-        <div class="ol oi">📌 标识: {{ i1 }}</div>
-        <div class="ol oi">🔐 主密码: {{ '*'.repeat(i2.length) }}</div>
+        <div class="ol oi">📌 输入A: {{ i1 }}</div>
+        <div class="ol oi">🔐 输入B: {{ '*'.repeat(i2.length) }}</div>
         <div class="ol os">── 正向链 ──</div>
         <div class="ol od">结果: <span class="hl">{{ r?.forward_result }}</span></div>
         <div class="ol os">── 反向链 ──</div>
         <div class="ol od">结果: <span class="hl">{{ r?.reverse_result }}</span></div>
         <div class="ol os">═══ 最终结果 ═══</div>
         <div class="of"><span class="fl">密码:</span><span class="fv">{{ r?.final_password }}</span><button class="cp" @click="cpy">复制</button></div>
-        <div class="ol ow">⚠️ 请牢记主密码</div>
+        <div class="ol ow">⚠️ 请牢记输入值</div>
       </div>
       <div v-if="err" class="ol oe">{{ err }}</div>
       <div class="ol"><span class="cs">{{ busy ? '⏳' : '❯' }}</span><span class="cb">_</span></div>
