@@ -87,18 +87,18 @@ async function unlock() {
   font-size: 14px;
 }
 .warning-banner {
-  background: rgba(230, 57, 70, 0.08);
-  border: 1px solid rgba(230, 57, 70, 0.25);
+  background: var(--accent-glow);
+  border: 1px solid var(--border-accent);
   border-radius: 6px;
   padding: 10px 14px;
   margin-bottom: 20px;
   font-size: 12px;
-  color: var(--accent-red);
+  color: var(--accent);
   line-height: 1.6;
   text-align: left;
 }
 .error {
-  color: var(--accent-red);
+  color: var(--accent);
   margin-top: 12px;
   font-size: 13px;
 }
