@@ -19,24 +19,23 @@
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
-      <div class="s-group">
       <div class="s-group-title">🎨 主题</div>
-      <div class="theme-grid">
-        <div v-for="t in themes" :key="t.id" class="theme-card" :class="{on:appStore.theme===t.id}" @click="onThemeChange(t.id)">
-          <div class="tc-prev"><div class="tc-bar" :style="{background:t.accent}"></div><div class="tc-body" :style="{background:t.bg}"></div></div>
-          <div class="tc-name">{{ t.label }}</div>
-        </div>
-        <div class="theme-card" :class="{on:appStore.theme==='custom'}" @click="onThemeChange('custom')">
-          <div class="tc-prev"><div class="tc-bar" :style="{background:cc.accent}"></div><div class="tc-body" :style="{background:cc.bgPrimary}"></div></div>
-          <div class="tc-name">🎨 自定义</div>
-        </div>
-      </div>
-      <div v-if="appStore.theme === 'custom'" class="custom-theme">
-        <div class="ct-row"><span class="ct-label">强调色</span><div class="ct-swatch" :style="{background:cc.accent}"></div><n-color-picker v-model:value="cc.accent" size="small" style="width:90px" @update:value="onCustomChange" /></div>
-        <div class="ct-row"><span class="ct-label">背景色</span><div class="ct-swatch" :style="{background:cc.bgPrimary}"></div><n-color-picker v-model:value="cc.bgPrimary" size="small" style="width:90px" @update:value="onCustomChange" /></div>
-        <div class="ct-row"><span class="ct-label">卡片色</span><div class="ct-swatch" :style="{background:cc.bgCard}"></div><n-color-picker v-model:value="cc.bgCard" size="small" style="width:90px" @update:value="onCustomChange" /></div>
+      <div class="s-row">
+        <span class="s-label">配色</span>
+        <n-radio-group v-model:value="appStore.theme" @update:value="onThemeChange">
+          <n-radio-button value="red">🔴 凯伊红</n-radio-button>
+          <n-radio-button value="blue">🔵 深海蓝</n-radio-button>
+          <n-radio-button value="purple">🟣 暗夜紫</n-radio-button>
+          <n-radio-button value="green">🟢 森林绿</n-radio-button>
+          <n-radio-button value="orange">🟠 落日橙</n-radio-button>
+          <n-radio-button value="pink">🩷 樱花粉</n-radio-button>
+        </n-radio-group>
       </div>
     </div>
+
+    <n-divider style="margin: 8px 0" />
+
+    <div class="s-group">
       <div class="s-group-title">📂 备份路径</div>
       <div class="s-row s-row-col">
         <div class="s-path">{{ backupPath || '未设置' }}</div>
@@ -96,17 +95,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
-import { useAppStore, type CustomTheme } from '../stores/app'
+import { useAppStore } from '../stores/app'
 import DeviceAuthList from '../components/DeviceAuthList.vue'
 import BackupPanel from '../components/BackupPanel.vue'
 
 const appStore = useAppStore()
 const message = useMessage()
-const cc = reactive<CustomTheme>({ ...appStore.customColors })
 const autoLock = ref(5)
 const backupPath = ref('')
 const showChangePwd = ref(false)
@@ -114,15 +112,6 @@ const currentPwd = ref('')
 const newPwd = ref('')
 const confirmPwd = ref('')
 const changing = ref(false)
-
-const themes = [
-  { id: 'red', label: '🔴 凯伊红', accent: '#E63946', bg: '#0a0e1a' },
-  { id: 'blue', label: '🔵 深海蓝', accent: '#58a6ff', bg: '#0c1017' },
-  { id: 'purple', label: '🟣 暗夜紫', accent: '#bc8cff', bg: '#0e0a18' },
-  { id: 'green', label: '🟢 森林绿', accent: '#3fb950', bg: '#0a1410' },
-  { id: 'orange', label: '🟠 落日橙', accent: '#d29922', bg: '#16100a' },
-  { id: 'pink', label: '🩷 樱花粉', accent: '#ec8eb8', bg: '#160a10' },
-]
 
 const lockOptions = [
   { label: '1分', value: 1 }, { label: '5分', value: 5 },
@@ -163,7 +152,6 @@ watch(autoLock, async (v) => {
 })
 
 function onThemeChange(t: string) { appStore.setTheme(t as any) }
-function onCustomChange() { appStore.updateCustomColors({ accent: cc.accent, bgPrimary: cc.bgPrimary, bgCard: cc.bgCard }) }
 
 async function pickBackupFolder() {
   const selected = await open({ directory: true, multiple: false, title: '选择备份文件夹' })
@@ -212,16 +200,4 @@ async function doChangePwd() {
 .s-path { font-size: 12px; color: var(--text-secondary); font-family: monospace; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 4px; word-break: break-all; }
 .s-label { font-size: 13px; color: var(--text-secondary); min-width: 80px; }
 .s-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-.theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
-.theme-card { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 6px; cursor: pointer; transition: all 0.12s; background: var(--bg-secondary); }
-.theme-card:hover { border-color: var(--border-hover); }
-.theme-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow); }
-.tc-prev { height: 32px; border-radius: 3px; overflow: hidden; display: flex; flex-direction: column; margin-bottom: 4px; }
-.tc-bar { height: 8px; }
-.tc-body { flex: 1; }
-.tc-name { font-size: 11px; color: var(--text-secondary); text-align: center; }
-.custom-theme { margin-top: 4px; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--bg-card); border-radius: var(--radius-xs); }
-.ct-row { display: flex; align-items: center; gap: 6px; }
-.ct-label { font-size: 12px; color: var(--text-secondary); min-width: 48px; }
-.ct-swatch { width: 20px; height: 20px; border-radius: 3px; border: 1px solid var(--border); flex-shrink: 0; }
 </style>
