@@ -2,7 +2,13 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
-export type ThemeName = 'red' | 'blue' | 'purple' | 'green' | 'orange' | 'pink'
+export type ThemeName = 'red' | 'blue' | 'purple' | 'green' | 'orange' | 'pink' | 'custom'
+
+export interface CustomTheme {
+  accent: string
+  bgPrimary: string
+  bgCard: string
+}
 
 export const useAppStore = defineStore('app', () => {
   const unlocked = ref(false)       // 整体解锁
@@ -13,11 +19,43 @@ export const useAppStore = defineStore('app', () => {
 
   // 主题
   const theme = ref<ThemeName>((localStorage.getItem('kayTheme') as ThemeName) || 'red')
+  const customColors = ref<CustomTheme>(JSON.parse(localStorage.getItem('kayCustomTheme') || 'null') || {
+    accent: '#58a6ff',
+    bgPrimary: '#0d1117',
+    bgCard: '#1c2333',
+  })
+
+  function applyCustomTheme() {
+    const el = document.documentElement
+    el.setAttribute('data-theme', 'custom')
+    const c = customColors.value
+    el.style.setProperty('--accent', c.accent)
+    el.style.setProperty('--accent-soft', c.accent)
+    el.style.setProperty('--accent-glow', c.accent + '1f')
+    el.style.setProperty('--accent-glow-strong', c.accent + '38')
+    el.style.setProperty('--border-accent', c.accent + '4d')
+    el.style.setProperty('--bg-primary', c.bgPrimary)
+    el.style.setProperty('--bg-secondary', c.bgCard)
+    el.style.setProperty('--bg-card', c.bgCard)
+    el.style.setProperty('--bg-input', c.bgPrimary)
+    el.style.setProperty('--bg-elevated', c.bgCard)
+  }
 
   function setTheme(t: ThemeName) {
     theme.value = t
     localStorage.setItem('kayTheme', t)
-    document.documentElement.setAttribute('data-theme', t)
+    if (t === 'custom') {
+      applyCustomTheme()
+    } else {
+      document.documentElement.removeAttribute('style')
+      document.documentElement.setAttribute('data-theme', t)
+    }
+  }
+
+  function updateCustomColors(colors: CustomTheme) {
+    customColors.value = colors
+    localStorage.setItem('kayCustomTheme', JSON.stringify(colors))
+    if (theme.value === 'custom') applyCustomTheme()
   }
 
   function lockVault() { vaultLocked.value = true }
@@ -45,7 +83,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   return {
-    unlocked, vaultLocked, apiLocked, sessionId, autoLockMinutes, theme,
-    setTheme, lockVault, unlockVault, lockApi, unlockApi, login, logout,
+    unlocked, vaultLocked, apiLocked, sessionId, autoLockMinutes, theme, customColors,
+    setTheme, updateCustomColors, lockVault, unlockVault, lockApi, unlockApi, login, logout,
   }
 })
