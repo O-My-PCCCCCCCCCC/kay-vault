@@ -3,7 +3,7 @@
     <!-- 密码库锁定遮罩 -->
     <div class="top-bar">
       <div class="search-wrap">
-        <n-input v-model:value="vault.searchQuery" placeholder="搜索密码..." clearable size="large" style="width: 320px" @focus="searchFocused = true" @blur="onSearchBlur" @input="onSearchInput" />
+        <n-input v-model:value="vault.searchQuery" placeholder="🔍 搜索密码..." clearable size="large" style="width: 320px" @focus="searchFocused = true" @blur="onSearchBlur" @input="onSearchInput" />
         <div v-if="vault.searchQuery && searchFocused && searchResults.length > 0" class="search-popup">
           <div v-for="e in searchResults" :key="e.entry.id" class="sp-item" @mousedown.prevent="openEdit(e.entry)">
             <div class="sp-name" v-html="hl(e.entry.name)"></div>

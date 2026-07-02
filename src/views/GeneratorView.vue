@@ -1,6 +1,6 @@
 <template>
   <div class="genv">
-    <h2 class="page-title"><img src="/icons/gen.svg" class="pti"/> 生成器</h2>
+    <h2 class="page-title">🎲 生成器</h2>
 
     <n-tabs v-model:value="tab" type="line" animated>
       <!-- ─── 随机密码 ─── -->
@@ -145,7 +145,7 @@ onMounted(() => { generate() })
 
 <style scoped>
 .genv { padding: 16px 20px; height: 100vh; overflow-y: auto; }
-.page-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+.page-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
 .gen-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .out-row { display: flex; gap: 8px; align-items: center; }
 .opt-row { display: flex; align-items: center; gap: 16px; }
