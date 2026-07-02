@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
-export type ThemeName = 'red' | 'blue' | 'purple'
+export type ThemeName = 'red' | 'blue' | 'purple' | 'green' | 'orange' | 'pink'
 
 export const useAppStore = defineStore('app', () => {
   const unlocked = ref(false)       // 整体解锁

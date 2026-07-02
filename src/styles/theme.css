@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-/* ─────────── 共享变量 ─────────── */
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
@@ -9,6 +8,7 @@
   --radius-xs: 4px;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -17,98 +17,162 @@ body {
   font-family: var(--font-sans);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #app { height: 100vh; }
 
-/* ─────────── 凯伊红（默认） ─────────── */
-[data-theme="red"], :root {
-  --bg-primary: #070b15;
-  --bg-secondary: #0c1020;
-  --bg-card: #111628;
-  --bg-hover: rgba(230, 57, 70, 0.04);
-  --bg-elevated: #1a1f35;
+/* ==========================
+   主题配色
+   ========================== */
 
+/* ── 凯伊红（默认） ── */
+[data-theme="red"] {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111628;
+  --bg-card: #181e33;
+  --bg-hover: rgba(230, 57, 70, 0.05);
+  --bg-elevated: #202640;
+  --bg-input: #0d1120;
   --accent: #E63946;
-  --accent-soft: #B31D28;
-  --accent-glow: rgba(230, 57, 70, 0.1);
-  --accent-glow-strong: rgba(230, 57, 70, 0.2);
+  --accent-soft: #c62a36;
+  --accent-glow: rgba(230, 57, 70, 0.12);
+  --accent-glow-strong: rgba(230, 57, 70, 0.22);
   --accent-red: #E63946;
-  --accent-red-soft: #B31D28;
-  --accent-red-glow: rgba(230, 57, 70, 0.1);
-  --accent-red-glow-strong: rgba(230, 57, 70, 0.2);
-  --accent-blue: #7ec8e3;
-  --accent-purple: #bc8cff;
-  --accent-green: #3fb950;
-
-  --text-primary: #f0f0f0;
+  --text-primary: #eeeff5;
   --text-bright: #ffffff;
-  --text-secondary: #a0a8b8;
+  --text-secondary: #9ca3b8;
   --text-muted: #6b7280;
-
   --border: rgba(255, 255, 255, 0.06);
   --border-hover: rgba(255, 255, 255, 0.12);
   --border-accent: rgba(230, 57, 70, 0.3);
 }
 
-body { background: var(--bg-primary); color: var(--text-primary); }
-
-/* ─────────── 深海蓝 ─────────── */
+/* ── 深海蓝 ── */
 [data-theme="blue"] {
-  --bg-primary: #0d1117;
-  --bg-secondary: #151b23;
+  --bg-primary: #0c1017;
+  --bg-secondary: #141a24;
   --bg-card: #1c2333;
-  --bg-hover: rgba(88, 166, 255, 0.04);
-  --bg-elevated: #21283b;
-
+  --bg-hover: rgba(88, 166, 255, 0.05);
+  --bg-elevated: #252d40;
+  --bg-input: #0a0f17;
   --accent: #58a6ff;
   --accent-soft: #1f6feb;
   --accent-glow: rgba(88, 166, 255, 0.12);
-  --accent-glow-strong: rgba(88, 166, 255, 0.2);
+  --accent-glow-strong: rgba(88, 166, 255, 0.22);
   --accent-red: #E63946;
-  --accent-red-soft: #B31D28;
-  --accent-red-glow: rgba(230, 57, 70, 0.1);
-  --accent-red-glow-strong: rgba(230, 57, 70, 0.2);
-
   --text-primary: #e6edf3;
   --text-bright: #ffffff;
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
-
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.16);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.14);
   --border-accent: rgba(88, 166, 255, 0.3);
 }
 
-/* ─────────── 暗夜紫 ─────────── */
+/* ── 暗夜紫 ── */
 [data-theme="purple"] {
-  --bg-primary: #110b1a;
-  --bg-secondary: #1a1329;
-  --bg-card: #221a35;
-  --bg-hover: rgba(188, 140, 255, 0.04);
-  --bg-elevated: #2d2240;
-
+  --bg-primary: #0e0a18;
+  --bg-secondary: #16112a;
+  --bg-card: #1f1838;
+  --bg-hover: rgba(188, 140, 255, 0.05);
+  --bg-elevated: #2a2240;
+  --bg-input: #0c0818;
   --accent: #bc8cff;
   --accent-soft: #8b5cf6;
   --accent-glow: rgba(188, 140, 255, 0.12);
-  --accent-glow-strong: rgba(188, 140, 255, 0.2);
+  --accent-glow-strong: rgba(188, 140, 255, 0.22);
   --accent-red: #E63946;
-  --accent-red-soft: #B31D28;
-  --accent-red-glow: rgba(230, 57, 70, 0.1);
-  --accent-red-glow-strong: rgba(230, 57, 70, 0.2);
-
   --text-primary: #eeeaff;
   --text-bright: #ffffff;
   --text-secondary: #b0a8c8;
   --text-muted: #7a7290;
-
   --border: rgba(255, 255, 255, 0.06);
   --border-hover: rgba(255, 255, 255, 0.14);
   --border-accent: rgba(188, 140, 255, 0.3);
 }
 
-/* ─────────── Naive UI 覆盖 ─────────── */
-.n-card { --n-color: var(--bg-card) !important; --n-border-color: var(--border) !important; --n-border-radius: var(--radius-sm) !important; }
+/* ── 森林绿 ── */
+[data-theme="green"] {
+  --bg-primary: #0a1410;
+  --bg-secondary: #111e18;
+  --bg-card: #182a20;
+  --bg-hover: rgba(63, 185, 80, 0.05);
+  --bg-elevated: #203a2a;
+  --bg-input: #081410;
+  --accent: #3fb950;
+  --accent-soft: #2ea043;
+  --accent-glow: rgba(63, 185, 80, 0.12);
+  --accent-glow-strong: rgba(63, 185, 80, 0.22);
+  --accent-red: #E63946;
+  --text-primary: #e6f0ea;
+  --text-bright: #ffffff;
+  --text-secondary: #8b9e92;
+  --text-muted: #6e7a72;
+  --border: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(63, 185, 80, 0.3);
+}
+
+/* ── 落日橙 ── */
+[data-theme="orange"] {
+  --bg-primary: #16100a;
+  --bg-secondary: #241810;
+  --bg-card: #332214;
+  --bg-hover: rgba(210, 153, 34, 0.05);
+  --bg-elevated: #402c1a;
+  --bg-input: #140e08;
+  --accent: #d29922;
+  --accent-soft: #bb8009;
+  --accent-glow: rgba(210, 153, 34, 0.12);
+  --accent-glow-strong: rgba(210, 153, 34, 0.22);
+  --accent-red: #E63946;
+  --text-primary: #f0eae0;
+  --text-bright: #ffffff;
+  --text-secondary: #b8ac98;
+  --text-muted: #807868;
+  --border: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(210, 153, 34, 0.3);
+}
+
+/* ── 樱花粉 ── */
+[data-theme="pink"] {
+  --bg-primary: #160a10;
+  --bg-secondary: #24101a;
+  --bg-card: #331825;
+  --bg-hover: rgba(236, 142, 184, 0.05);
+  --bg-elevated: #402230;
+  --bg-input: #14080e;
+  --accent: #ec8eb8;
+  --accent-soft: #d46a96;
+  --accent-glow: rgba(236, 142, 184, 0.12);
+  --accent-glow-strong: rgba(236, 142, 184, 0.22);
+  --accent-red: #E63946;
+  --text-primary: #f0e6ea;
+  --text-bright: #ffffff;
+  --text-secondary: #c8a8b4;
+  --text-muted: #907080;
+  --border: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(236, 142, 184, 0.3);
+}
+
+body { background: var(--bg-primary); color: var(--text-primary); }
+
+/* ==========================
+   Naive UI 覆盖
+   ========================== */
+
+/* 卡片 */
+.n-card {
+  --n-color: var(--bg-card) !important;
+  --n-border-color: var(--border) !important;
+  --n-border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* 主要按钮 */
 .n-button--primary-type {
   --n-color: var(--accent-soft) !important;
   --n-color-hover: var(--accent) !important;
@@ -117,8 +181,10 @@ body { background: var(--bg-primary); color: var(--text-primary); }
   --n-border-radius: var(--radius-xs) !important;
   --n-font-weight: 600 !important;
   transition: all 0.15s !important;
-  box-shadow: 0 2px 12px var(--accent-glow) !important;
+  box-shadow: 0 2px 8px var(--accent-glow) !important;
 }
+
+/* 默认按钮 */
 .n-button--default-type {
   --n-border: 1px solid var(--border) !important;
   --n-border-hover: 1px solid var(--border-hover) !important;
@@ -127,20 +193,59 @@ body { background: var(--bg-primary); color: var(--text-primary); }
   --n-border-radius: var(--radius-xs) !important;
   --n-font-weight: 500 !important;
 }
+.n-button--default-type:hover { border-color: var(--border-hover) !important; }
+
+/* 输入框 */
 .n-input {
   --n-border-radius: var(--radius-xs) !important;
-  --n-color: var(--bg-secondary) !important;
+  --n-color: var(--bg-input) !important;
   --n-border: 1px solid var(--border) !important;
   --n-border-focus: 1px solid var(--accent) !important;
   --n-font-size: 14px !important;
   --n-text-color: var(--text-primary) !important;
   --n-caret-color: var(--accent) !important;
+  --n-color-focus: var(--bg-input) !important;
+  transition: border-color 0.15s !important;
 }
+.n-input--focus { --n-border: 1px solid var(--accent) !important; }
+
+/* 选择器 */
 .n-select { --n-border-radius: var(--radius-xs) !important; }
+.n-select .n-base-selection { transition: border-color 0.15s !important; }
+
+/* 弹窗 */
 .n-modal { --n-border-radius: var(--radius) !important; }
-.n-tabs .n-tab-nav-item--active { --n-color-selected: var(--accent-glow) !important; --n-text-color-selected: var(--accent) !important; }
-.n-checkbox { --n-color-checked: var(--accent-soft) !important; --n-border-checked: var(--accent-soft) !important; }
-.n-slider { --n-fill-color: var(--accent) !important; --n-rail-color: var(--border) !important; }
-.n-radio-group .n-radio-button--active { --n-color-active: var(--accent-glow) !important; --n-text-color-active: var(--accent) !important; --n-border-color-active: var(--border-accent) !important; }
-.n-message { --n-border-radius: var(--radius-sm) !important; }
+
+/* 标签页 */
+.n-tabs .n-tab-nav-item--active {
+  --n-color-selected: var(--accent-glow) !important;
+  --n-text-color-selected: var(--accent) !important;
+}
+
+/* 复选框 */
+.n-checkbox {
+  --n-color-checked: var(--accent-soft) !important;
+  --n-border-checked: var(--accent-soft) !important;
+}
+
+/* 滑动条 */
+.n-slider {
+  --n-fill-color: var(--accent) !important;
+  --n-rail-color: var(--border) !important;
+}
+
+/* 单选按钮组 */
+.n-radio-group .n-radio-button--active {
+  --n-color-active: var(--accent-glow) !important;
+  --n-text-color-active: var(--accent) !important;
+  --n-border-color-active: var(--border-accent) !important;
+}
+
+/* 消息提示 */
+.n-message {
+  --n-border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* 分割线 */
 .n-divider { --n-color: var(--border) !important; }

@@ -26,6 +26,9 @@
           <n-radio-button value="red">🔴 凯伊红</n-radio-button>
           <n-radio-button value="blue">🔵 深海蓝</n-radio-button>
           <n-radio-button value="purple">🟣 暗夜紫</n-radio-button>
+          <n-radio-button value="green">🟢 森林绿</n-radio-button>
+          <n-radio-button value="orange">🟠 落日橙</n-radio-button>
+          <n-radio-button value="pink">🩷 樱花粉</n-radio-button>
         </n-radio-group>
       </div>
     </div>
