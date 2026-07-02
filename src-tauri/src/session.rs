@@ -2,9 +2,10 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 const VERIFY_FILE: &str = "master.verify";
+const SESSION_TTL: Duration = Duration::from_secs(300); // 5 分钟无人操作自动过期
 
 fn verify_path() -> PathBuf {
     let home = std::env::var("HOME")
@@ -19,14 +20,49 @@ fn compute_verify_tag(key: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
+/// 获取 C 盘卷序列号作为设备指纹
+pub fn get_machine_id() -> String {
+    #[cfg(windows)]
+    {
+        if let Ok(out) = std::process::Command::new("powershell")
+            .args([
+                "-Command",
+                "(Get-CimInstance -ClassName Win32_LogicalDisk -Filter 'DeviceID=\"C:\"').VolumeSerialNumber",
+            ])
+            .output()
+        {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                return s;
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        if let Ok(out) = std::process::Command::new("lsblk")
+            .args(["-o", "SERIAL", "-n", "/dev/sda"])
+            .output()
+        {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() {
+                return s;
+            }
+        }
+    }
+    // 保底：如果获取不到序列号，用 hostname
+    std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "unknown".into())
+}
+
 pub struct SessionManager {
     sessions: Mutex<HashMap<String, SessionData>>,
 }
 
 struct SessionData {
     key: Vec<u8>,
-    #[allow(dead_code)]
-    created_at: Instant, // 预留：用于自动锁定超时
+    last_active: Instant,
+    machine_id: String,
 }
 
 impl SessionManager {
@@ -70,11 +106,14 @@ impl SessionManager {
         };
 
         let session_id = uuid::Uuid::new_v4().to_string();
+        let machine_id = get_machine_id();
+        let now = Instant::now();
         self.sessions.lock().unwrap().insert(
             session_id.clone(),
             SessionData {
                 key,
-                created_at: Instant::now(),
+                last_active: now,
+                machine_id,
             },
         );
         Ok(session_id)
@@ -85,18 +124,67 @@ impl SessionManager {
         self.sessions.lock().unwrap().remove(session_id);
     }
 
-    /// 取派生密钥
+    /// 取派生密钥（校验 TTL 和设备指纹）
     pub fn get_key(&self, session_id: &str) -> Option<Vec<u8>> {
-        self.sessions
-            .lock()
-            .unwrap()
-            .get(session_id)
-            .map(|s| s.key.clone())
+        let mut map = self.sessions.lock().unwrap();
+        let data = map.get_mut(session_id)?;
+
+        // 检查 TTL
+        if Instant::now().duration_since(data.last_active) > SESSION_TTL {
+            map.remove(session_id);
+            return None;
+        }
+
+        // 检查设备指纹
+        let current_machine = get_machine_id();
+        if current_machine != data.machine_id {
+            map.remove(session_id);
+            return None;
+        }
+
+        // 更新活动时间
+        data.last_active = Instant::now();
+        Some(data.key.clone())
+    }
+
+    /// 心跳：刷新 TTL，重新校验设备指纹
+    pub fn heartbeat(&self, session_id: &str) -> bool {
+        let mut map = self.sessions.lock().unwrap();
+        let data = match map.get_mut(session_id) {
+            Some(d) => d,
+            None => return false,
+        };
+
+        // 检查 TTL
+        if Instant::now().duration_since(data.last_active) > SESSION_TTL {
+            map.remove(session_id);
+            return false;
+        }
+
+        // 重新校验设备指纹
+        let current_machine = get_machine_id();
+        if current_machine != data.machine_id {
+            map.remove(session_id);
+            return false;
+        }
+
+        data.last_active = Instant::now();
+        true
     }
 
     /// 检查会话是否存活
     pub fn is_active(&self, session_id: &str) -> bool {
-        self.sessions.lock().unwrap().contains_key(session_id)
+        let mut map = self.sessions.lock().unwrap();
+        let data = match map.get_mut(session_id) {
+            Some(d) => d,
+            None => return false,
+        };
+
+        if Instant::now().duration_since(data.last_active) > SESSION_TTL {
+            map.remove(session_id);
+            return false;
+        }
+        true
     }
 
     /// 换密码：校验旧密码 → 用新密码重新加密所有数据
@@ -119,7 +207,7 @@ impl SessionManager {
             return Err("旧密码错误".into());
         }
 
-        // 2. 用旧密钥读取 vault 和 api_keys
+        // 2. 读旧数据
         let vp_vault = crate::vault_path();
         let vault_data = if vp_vault.exists() {
             let raw = std::fs::read(&vp_vault).map_err(|e| format!("读取密码库失败: {}", e))?;
@@ -160,11 +248,11 @@ impl SessionManager {
             None
         };
 
-        // 3. 用新密码派生新密钥
+        // 3. 新密码派生
         let new_salt = crate::crypto::generate_salt();
         let new_key = crate::crypto::derive_key(new_password, &new_salt);
 
-        // 4. 重新加密并写入新校验文件
+        // 4. 写入新校验文件
         let new_hmac = compute_verify_tag(&new_key);
         let mut verify_data = Vec::with_capacity(64);
         verify_data.extend_from_slice(&new_salt);
@@ -195,11 +283,14 @@ impl SessionManager {
 
         // 7. 创建新会话
         let new_session_id = uuid::Uuid::new_v4().to_string();
+        let now = Instant::now();
+        let machine_id = get_machine_id();
         self.sessions.lock().unwrap().insert(
             new_session_id.clone(),
             SessionData {
                 key: new_key,
-                created_at: Instant::now(),
+                last_active: now,
+                machine_id,
             },
         );
 

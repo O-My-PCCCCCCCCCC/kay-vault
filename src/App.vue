@@ -103,6 +103,35 @@ async function setScreenshotProtection(protect: boolean) {
   try { await getCurrentWindow().setContentProtected(protect) } catch { /* 忽略 */ }
 }
 
+// ── 会话心跳 ─────────────────────────
+// 每 3 分钟向后端发心跳，校验 session 是否有效
+// 心跳会检查 TTL + 设备指纹，不一致则自动过期
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+const HEARTBEAT_INTERVAL = 3 * 60 * 1000 // 3 分钟
+
+async function sendHeartbeat() {
+  if (!appStore.sessionId) return
+  try {
+    const alive = await invoke<boolean>('session_heartbeat', { sessionId: appStore.sessionId })
+    if (!alive) {
+      console.warn('会话已过期，正在登出...')
+      await appStore.logout()
+    }
+  } catch {
+    await appStore.logout()
+  }
+}
+
+function startHeartbeat() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer)
+  sendHeartbeat() // 启动时立即发一次
+  heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL)
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null }
+}
+
 // ── 自动锁定 ─────────────────────────
 let autoLockTimer: ReturnType<typeof setTimeout> | null = null
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'wheel']
@@ -134,8 +163,8 @@ function stopActivityTracking() {
 
 watch(() => appStore.unlocked, async (v) => {
   await setScreenshotProtection(v)
-  if (v) { refreshStats(); startActivityTracking() }
-  else { stopActivityTracking() }
+  if (v) { refreshStats(); startHeartbeat(); startActivityTracking() }
+  else { stopHeartbeat(); stopActivityTracking() }
 })
 
 router.afterEach(() => refreshStats())

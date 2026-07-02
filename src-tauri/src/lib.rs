@@ -279,6 +279,11 @@ fn session_status(session_id: String, state: tauri::State<'_, session::SessionMa
 }
 
 #[tauri::command]
+fn session_heartbeat(session_id: String, state: tauri::State<'_, session::SessionManager>) -> bool {
+    state.heartbeat(&session_id)
+}
+
+#[tauri::command]
 fn session_change_password(session_id: String, old_password: String, new_password: String, state: tauri::State<'_, session::SessionManager>) -> Result<String, String> {
     state.change_password(&session_id, &old_password, &new_password)
 }
@@ -326,7 +331,7 @@ pub fn run() {
             auth_generate_key, auth_check, auth_remove,
             backup_now, restore_from_usb, list_backups,
             api_keys_load, api_keys_save, get_stats, sha_pin_run, open_url,
-            session_login, session_lock, session_status, session_change_password, import_from_file,
+            session_login, session_lock, session_status, session_heartbeat, session_change_password, import_from_file,
         ])
         .setup(|app| {
             app.manage(session::SessionManager::new());
