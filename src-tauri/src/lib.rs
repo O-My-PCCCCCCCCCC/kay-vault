@@ -291,7 +291,7 @@ fn session_change_password(session_id: String, old_password: String, new_passwor
     state.change_password(&session_id, &old_password, &new_password)
 }
 
-/// 导入加密备份文件（需要输入创建该备份时用的主密码）
+/// 导入加密备份文件
 #[tauri::command]
 fn import_from_file(file_path: String, password: String) -> Result<(), String> {
     let data = std::fs::read(&file_path).map_err(|e| format!("读取文件失败: {}", e))?;
@@ -301,13 +301,11 @@ fn import_from_file(file_path: String, password: String) -> Result<(), String> {
     let (salt, encrypted) = data.split_at(32);
     let key = crate::crypto::derive_key(&password, salt);
     let plaintext = crate::crypto::decrypt(encrypted, &key)
-        .map_err(|_| String::from("密码错误。请输入创建该备份文件时所用的主密码，不是当前的登录密码。"))?;
+        .map_err(|_| String::from("密码错误或备份文件不匹配"))?;
 
-    // 验证是有效的 JSON（确保是密码库文件）
     let _: serde_json::Value = serde_json::from_slice(&plaintext)
         .map_err(|_| String::from("备份文件格式错误"))?;
 
-    // 复制到 vault 路径
     let vp = vault_path();
     if let Some(parent) = vp.parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;

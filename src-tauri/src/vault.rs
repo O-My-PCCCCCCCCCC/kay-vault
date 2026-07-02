@@ -41,8 +41,10 @@ pub fn load_vault(path: &str, key: &[u8]) -> Result<VaultFile, String> {
 /// 加密并保存密码库到磁盘（使用预派生的密钥）
 pub fn save_vault(path: &str, vault: &VaultFile, key: &[u8]) -> Result<(), String> {
     let plaintext = serde_json::to_vec(vault).map_err(|e| format!("序列化失败: {}", e))?;
-    let salt = crate::crypto::generate_salt(); // 保持文件格式兼容
     let encrypted = crate::crypto::encrypt(&plaintext, key);
+
+    // 用 master.verify 的真实盐值代替随机填充（便于导入时验证密码）
+    let salt = read_verify_salt().unwrap_or_else(|| crate::crypto::generate_salt());
 
     let mut data = Vec::with_capacity(32 + encrypted.len());
     data.extend_from_slice(&salt);
@@ -54,4 +56,16 @@ pub fn save_vault(path: &str, vault: &VaultFile, key: &[u8]) -> Result<(), Strin
     }
     std::fs::write(path, &data).map_err(|e| format!("写入文件失败: {}", e))?;
     Ok(())
+}
+
+/// 从 master.verify 读取真正的盐值
+fn read_verify_salt() -> Option<Vec<u8>> {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    let vp = std::path::PathBuf::from(home).join(".key-vault").join("master.verify");
+    if !vp.exists() { return None; }
+    let data = std::fs::read(&vp).ok()?;
+    if data.len() < 32 { return None; }
+    Some(data[..32].to_vec())
 }
