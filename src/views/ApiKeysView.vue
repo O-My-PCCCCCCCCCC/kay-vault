@@ -1,6 +1,18 @@
 <template>
   <div class="akv">
-    <div class="tb"><n-input v-model:value="q" placeholder="🔍 搜索..." clearable size="large" style="width:260px" /><n-button type="primary" size="large" @click="add">➕ 新增</n-button></div>
+    <div class="tb">
+      <div class="search-wrap">
+        <n-input v-model:value="q" placeholder="🔍 搜索..." clearable size="large" style="width:280px" @focus="sf=true" @blur="onBlur" />
+        <div v-if="q && sf && sr.length>0" class="sp">
+          <div v-for="k in sr" :key="k.idx" class="spi" @mousedown.prevent="jump(k.idx)">
+            <div class="spn" v-html="hl(k.name)"></div>
+            <div class="spm"><span class="spt">提供商</span> <span v-html="hl(k.provider)"></span></div>
+          </div>
+        </div>
+        <div v-if="q && sf && sr.length===0" class="sp spe"><div class="spe-t">没有匹配的密钥</div></div>
+      </div>
+      <n-button type="primary" size="large" @click="add">➕ 新增</n-button>
+    </div>
 
     <div v-if="keys.length === 0" class="empty"><div class="ei">🔐</div><p>还没有 API 密钥</p><n-button type="primary" dashed @click="add">添加第一个</n-button></div>
 
@@ -16,10 +28,10 @@
         <div class="lh">{{ sv === 'all' ? '📦 全部密钥' : '📁 '+sv }}</div>
         <div v-if="items.length===0" class="le">空</div>
         <div v-else class="lb">
-          <div v-for="(k,i) in items" :key="i" class="er" @click="edit(i)">
+          <div v-for="(k,i) in items" :key="i" class="er" :class="{on:hi===idx(k)}" @click="edit(i)">
             <div class="eico">{{ icon(k.provider) }}</div>
             <div class="eb">
-              <div class="en">{{ k.name }}</div>
+              <div class="en" v-html="q ? hl(k.name) : k.name"></div>
               <div class="efs"><span class="ef" @click.stop="cpKey(k.key)">🔑 {{ sk === idx(k) ? k.key : mask(k.key) }} <span class="eft" @click.stop="ts(idx(k))">{{ sk === idx(k) ? '🙈' : '👁' }}</span></span><span v-if="k.base_url" class="ef link" @click.stop="cpKey(k.base_url)">🌐 {{ k.base_url }}</span></div>
             </div>
             <div class="ea"><span class="eab" @click.stop="cpKey(k.key)">📋</span><span class="eab del" @click.stop="del(idx(k))">🗑️</span></div>
@@ -50,21 +62,86 @@ const app = useAppStore()
 const msg = useMessage()
 
 const keys = ref<AK[]>([]), q = ref(''), loading = ref(false), sk = ref<number|null>(null)
-const sv = ref('all'), fm = ref(false), fp = ref(false), ei = ref(-1)
+const sv = ref('all'), fm = ref(false), fp = ref(false), ei = ref(-1), sf = ref(false), hi = ref<number|null>(null)
 const f = reactive({ name: '', key: '', provider: '', base_url: '' })
 
-const po = [{label:'🤖 OpenAI',value:'OpenAI'},{label:'🧠 Anthropic',value:'Anthropic'},{label:'🐙 GitHub',value:'GitHub'},{label:'🔮 Google AI',value:'Google AI'},{label:'🔵 Azure',value:'Azure'},{label:'☁️ Cloudflare',value:'Cloudflare'},{label:'🟣 Groq',value:'Groq'},{label:'🟢 DeepSeek',value:'DeepSeek'},{label:'⚫ 自定义',value:'自定义'}]
+const po = [
+  {label:'🤖 OpenAI',value:'OpenAI'},
+  {label:'🧠 Anthropic',value:'Anthropic'},
+  {label:'🐙 GitHub',value:'GitHub'},
+  {label:'🔮 Google AI',value:'Google AI'},
+  {label:'🔵 Azure',value:'Azure'},
+  {label:'☁️ Cloudflare',value:'Cloudflare'},
+  {label:'🟣 Groq',value:'Groq'},
+  {label:'🟢 DeepSeek',value:'DeepSeek'},
+  {label:'🤗 HuggingFace',value:'HuggingFace'},
+  {label:'⚫ Mistral AI',value:'Mistral AI'},
+  {label:'🟠 Together AI',value:'Together AI'},
+  {label:'🔴 Perplexity',value:'Perplexity'},
+  {label:'🟡 ElevenLabs',value:'ElevenLabs'},
+  {label:'🟤 Replicate',value:'Replicate'},
+  {label:'⚪ 自定义',value:'自定义'},
+]
 
 const du = computed(() => {
-  const u: Record<string,string> = { OpenAI:'https://api.openai.com/v1', Anthropic:'https://api.anthropic.com/v1', GitHub:'https://api.github.com', 'Google AI':'https://generativelanguage.googleapis.com', Azure:'https://YOUR_RESOURCE.openai.azure.com', Cloudflare:'https://api.cloudflare.com/client/v4', Groq:'https://api.groq.com/openai/v1', DeepSeek:'https://api.deepseek.com/v1' }
+  const u: Record<string,string> = {
+    OpenAI:'https://api.openai.com/v1',
+    Anthropic:'https://api.anthropic.com/v1',
+    GitHub:'https://api.github.com',
+    'Google AI':'https://generativelanguage.googleapis.com',
+    Azure:'https://YOUR_RESOURCE.openai.azure.com',
+    Cloudflare:'https://api.cloudflare.com/client/v4',
+    Groq:'https://api.groq.com/openai/v1',
+    DeepSeek:'https://api.deepseek.com/v1',
+    HuggingFace:'https://api-inference.huggingface.co/v1',
+    'Mistral AI':'https://api.mistral.ai/v1',
+    'Together AI':'https://api.together.xyz/v1',
+    Perplexity:'https://api.perplexity.ai',
+    ElevenLabs:'https://api.elevenlabs.io/v1',
+    Replicate:'https://api.replicate.com/v1',
+  }
   return u[f.provider] || 'https://'
 })
 
-function icon(p: string) { const m: Record<string,string>={OpenAI:'🤖',Anthropic:'🧠',GitHub:'🐙','Google AI':'🔮',Azure:'🔵',Cloudflare:'☁️',Groq:'🟣',DeepSeek:'🟢',自定义:'⚫'}; return m[p]||'🔑' }
+function icon(p: string) {
+  const m: Record<string,string> = {
+    OpenAI:'🤖',Anthropic:'🧠',GitHub:'🐙','Google AI':'🔮',
+    Azure:'🔵',Cloudflare:'☁️',Groq:'🟣',DeepSeek:'🟢',
+    HuggingFace:'🤗','Mistral AI':'⚫','Together AI':'🟠',
+    Perplexity:'🔴',ElevenLabs:'🟡',Replicate:'🟤',自定义:'⚪'
+  }
+  return m[p]||'🔑'
+}
 
-const filtered = computed(() => { if (!q.value) return keys.value; const l = q.value.toLowerCase(); return keys.value.filter(k => k.name.toLowerCase().includes(l) || k.provider.toLowerCase().includes(l)) })
+// 搜索
+const filtered = computed(() => {
+  if (!q.value) return keys.value
+  const l = q.value.toLowerCase()
+  return keys.value.filter(k =>
+    k.name.toLowerCase().includes(l) ||
+    k.provider.toLowerCase().includes(l) ||
+    k.key.toLowerCase().includes(l) ||
+    k.base_url.toLowerCase().includes(l)
+  )
+})
 const groups = computed(() => { const m = new Map<string,AK[]>(); for (const k of filtered.value) { const p = k.provider||'其他'; if (!m.has(p)) m.set(p,[]); m.get(p)!.push(k) }; return Array.from(m).map(([p,items])=>({p,items})) })
 const items = computed(() => { if (sv.value==='all') return filtered.value; for (const g of groups.value) if (g.p === sv.value) return g.items; return [] })
+
+// 搜索弹窗结果
+const sr = computed(() => {
+  if (!q.value) return []
+  const l = q.value.toLowerCase()
+  return keys.value.map((k,i)=>[k,i] as [AK,number]).filter(([k])=>k.name.toLowerCase().includes(l)||k.provider.toLowerCase().includes(l)).map(([k,idx])=>({name:k.name,provider:k.provider,idx}))
+})
+
+function hl(text: string): string {
+  if (!q.value) return text
+  const re = new RegExp(`(${q.value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi')
+  return text.replace(re, '<mark class="hk">$1</mark>')
+}
+function onBlur() { setTimeout(() => { sf.value = false }, 200) }
+function jump(idx: number) { hi.value = idx; sf.value = false }
+
 function idx(k: AK) { return keys.value.indexOf(k) }
 function mask(k: string) { if (!k||k.length<=8) return '••••••••'; return k.slice(0,4)+'••••'+k.slice(-4) }
 function ts(i: number) { sk.value = sk.value === i ? null : i }
@@ -81,6 +158,18 @@ onMounted(load)
 <style scoped>
 .akv { padding: 14px 18px; height: 100vh; display: flex; flex-direction: column; }
 .tb { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
+.search-wrap { position: relative; }
+.sp { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 280px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.spe { padding: 20px; text-align: center; }
+.spe-t { color: var(--text-muted); font-size: 13px; }
+.spi { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.08s; }
+.spi:last-child { border-bottom: none; }
+.spi:hover { background: var(--accent-red-glow); }
+.spn { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.spm { font-size: 11px; color: var(--text-muted); }
+.spt { display: inline-block; background: rgba(255,255,255,0.05); padding: 0 5px; border-radius: 3px; margin-right: 4px; }
+:deep(.hk) { background: rgba(229,192,123,0.25); color: #e5c07b; border-radius: 2px; padding: 0 1px; font-style: normal; }
+.er.on { background: var(--accent-red-glow); border-left: 2px solid var(--accent-red); }
 .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
 .ei { font-size: 48px; }
 .spin { flex: 1; display: flex; align-items: center; justify-content: center; }

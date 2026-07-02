@@ -97,8 +97,23 @@ const showGenerator = ref(false)
 const showPwd = ref(false)
 
 const existingGroups = computed(() => {
-  const groups = [...new Set(vault.entries.map(e => e.group).filter(Boolean))]
-  return groups.slice(0, 10).map(g => ({ label: g, value: g }))
+  const defaults = [
+    { label: '默认分组', value: '默认分组' },
+    { label: '💼 工作', value: '工作' },
+    { label: '👤 个人', value: '个人' },
+    { label: '👥 社交', value: '社交' },
+    { label: '💰 金融', value: '金融' },
+    { label: '💻 开发', value: '开发' },
+    { label: '🎮 娱乐', value: '娱乐' },
+    { label: '🛒 购物', value: '购物' },
+    { label: '📚 教育', value: '教育' },
+    { label: '🏥 医疗', value: '医疗' },
+    { label: '📦 其他', value: '其他' },
+  ]
+  const extra = [...new Set(vault.entries.map(e => e.group).filter(Boolean))]
+    .filter(g => !defaults.some(d => d.value === g))
+    .map(g => ({ label: g, value: g }))
+  return [...defaults, ...extra]
 })
 
 const categoryOptions = computed(() => {
