@@ -19,6 +19,20 @@
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
+      <div class="s-group-title">🎨 主题</div>
+      <div class="s-row">
+        <span class="s-label">配色</span>
+        <n-radio-group v-model:value="appStore.theme" @update:value="onThemeChange">
+          <n-radio-button value="red">🔴 凯伊红</n-radio-button>
+          <n-radio-button value="blue">🔵 深海蓝</n-radio-button>
+          <n-radio-button value="purple">🟣 暗夜紫</n-radio-button>
+        </n-radio-group>
+      </div>
+    </div>
+
+    <n-divider style="margin: 8px 0" />
+
+    <div class="s-group">
       <div class="s-group-title">📂 备份路径</div>
       <div class="s-row s-row-col">
         <div class="s-path">{{ backupPath || '未设置' }}</div>
@@ -133,6 +147,8 @@ watch(autoLock, async (v) => {
   appStore.autoLockMinutes = v
   await saveCfg()
 })
+
+function onThemeChange(t: string) { appStore.setTheme(t as any) }
 
 async function pickBackupFolder() {
   const selected = await open({ directory: true, multiple: false, title: '选择备份文件夹' })

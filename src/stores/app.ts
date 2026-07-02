@@ -2,12 +2,23 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
+export type ThemeName = 'red' | 'blue' | 'purple'
+
 export const useAppStore = defineStore('app', () => {
   const unlocked = ref(false)       // 整体解锁
   const vaultLocked = ref(false)    // 密码库单独锁定（UI 级）
   const apiLocked = ref(false)      // API Key 单独锁定（UI 级）
   const sessionId = ref<string | null>(null)  // 会话令牌
   const autoLockMinutes = ref(5)    // 自动锁定分钟（0=永不）
+
+  // 主题
+  const theme = ref<ThemeName>((localStorage.getItem('kayTheme') as ThemeName) || 'red')
+
+  function setTheme(t: ThemeName) {
+    theme.value = t
+    localStorage.setItem('kayTheme', t)
+    document.documentElement.setAttribute('data-theme', t)
+  }
 
   function lockVault() { vaultLocked.value = true }
   function unlockVault() { vaultLocked.value = false }
@@ -34,8 +45,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   return {
-    unlocked, vaultLocked, apiLocked, sessionId, autoLockMinutes,
-    lockVault, unlockVault, lockApi, unlockApi,
-    login, logout,
+    unlocked, vaultLocked, apiLocked, sessionId, autoLockMinutes, theme,
+    setTheme, lockVault, unlockVault, lockApi, unlockApi, login, logout,
   }
 })

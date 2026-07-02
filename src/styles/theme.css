@@ -1,14 +1,66 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
+/* ─────────── 共享变量 ─────────── */
 :root {
-  /* 背景 */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { height: 100vh; }
+
+/* ─────────── 凯伊红（默认） ─────────── */
+[data-theme="red"], :root {
+  --bg-primary: #070b15;
+  --bg-secondary: #0c1020;
+  --bg-card: #111628;
+  --bg-hover: rgba(230, 57, 70, 0.04);
+  --bg-elevated: #1a1f35;
+
+  --accent: #E63946;
+  --accent-soft: #B31D28;
+  --accent-glow: rgba(230, 57, 70, 0.1);
+  --accent-glow-strong: rgba(230, 57, 70, 0.2);
+  --accent-red: #E63946;
+  --accent-red-soft: #B31D28;
+  --accent-red-glow: rgba(230, 57, 70, 0.1);
+  --accent-red-glow-strong: rgba(230, 57, 70, 0.2);
+  --accent-blue: #7ec8e3;
+  --accent-purple: #bc8cff;
+  --accent-green: #3fb950;
+
+  --text-primary: #f0f0f0;
+  --text-bright: #ffffff;
+  --text-secondary: #a0a8b8;
+  --text-muted: #6b7280;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(230, 57, 70, 0.3);
+}
+
+body { background: var(--bg-primary); color: var(--text-primary); }
+
+/* ─────────── 深海蓝 ─────────── */
+[data-theme="blue"] {
   --bg-primary: #0d1117;
   --bg-secondary: #151b23;
   --bg-card: #1c2333;
   --bg-hover: rgba(88, 166, 255, 0.04);
   --bg-elevated: #21283b;
 
-  /* 强调色（主蓝 / 辅红） */
   --accent: #58a6ff;
   --accent-soft: #1f6feb;
   --accent-glow: rgba(88, 166, 255, 0.12);
@@ -17,66 +69,56 @@
   --accent-red-soft: #B31D28;
   --accent-red-glow: rgba(230, 57, 70, 0.1);
   --accent-red-glow-strong: rgba(230, 57, 70, 0.2);
-  --accent-purple: #bc8cff;
-  --accent-green: #3fb950;
-  --accent-orange: #d29922;
 
-  /* 文字 */
   --text-primary: #e6edf3;
   --text-bright: #ffffff;
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
 
-  /* 边框 */
   --border: rgba(255, 255, 255, 0.08);
   --border-hover: rgba(255, 255, 255, 0.16);
   --border-accent: rgba(88, 166, 255, 0.3);
-
-  /* 圆角 / 阴影 */
-  --radius: 10px;
-  --radius-sm: 6px;
-  --radius-xs: 4px;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-
-  /* 字体 */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+/* ─────────── 暗夜紫 ─────────── */
+[data-theme="purple"] {
+  --bg-primary: #110b1a;
+  --bg-secondary: #1a1329;
+  --bg-card: #221a35;
+  --bg-hover: rgba(188, 140, 255, 0.04);
+  --bg-elevated: #2d2240;
 
-body {
-  font-family: var(--font-sans);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
+  --accent: #bc8cff;
+  --accent-soft: #8b5cf6;
+  --accent-glow: rgba(188, 140, 255, 0.12);
+  --accent-glow-strong: rgba(188, 140, 255, 0.2);
+  --accent-red: #E63946;
+  --accent-red-soft: #B31D28;
+  --accent-red-glow: rgba(230, 57, 70, 0.1);
+  --accent-red-glow-strong: rgba(230, 57, 70, 0.2);
+
+  --text-primary: #eeeaff;
+  --text-bright: #ffffff;
+  --text-secondary: #b0a8c8;
+  --text-muted: #7a7290;
+
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.14);
+  --border-accent: rgba(188, 140, 255, 0.3);
 }
 
-#app { height: 100vh; }
-
-/* ── Naive UI 覆盖 ── */
-
-/* 卡片 */
-.n-card {
-  --n-color: var(--bg-card) !important;
-  --n-border-color: var(--border) !important;
-  --n-border-radius: var(--radius-sm) !important;
-}
-
-/* 主要按钮 */
+/* ─────────── Naive UI 覆盖 ─────────── */
+.n-card { --n-color: var(--bg-card) !important; --n-border-color: var(--border) !important; --n-border-radius: var(--radius-sm) !important; }
 .n-button--primary-type {
   --n-color: var(--accent-soft) !important;
-  --n-color-hover: #388bfd !important;
-  --n-color-pressed: #1f6feb !important;
+  --n-color-hover: var(--accent) !important;
+  --n-color-pressed: var(--accent-soft) !important;
   --n-text-color: #fff !important;
   --n-border-radius: var(--radius-xs) !important;
   --n-font-weight: 600 !important;
   transition: all 0.15s !important;
+  box-shadow: 0 2px 12px var(--accent-glow) !important;
 }
-
-/* 默认按钮 */
 .n-button--default-type {
   --n-border: 1px solid var(--border) !important;
   --n-border-hover: 1px solid var(--border-hover) !important;
@@ -85,8 +127,6 @@ body {
   --n-border-radius: var(--radius-xs) !important;
   --n-font-weight: 500 !important;
 }
-
-/* 输入框 */
 .n-input {
   --n-border-radius: var(--radius-xs) !important;
   --n-color: var(--bg-secondary) !important;
@@ -96,48 +136,11 @@ body {
   --n-text-color: var(--text-primary) !important;
   --n-caret-color: var(--accent) !important;
 }
-
-/* 选择器 */
-.n-select {
-  --n-border-radius: var(--radius-xs) !important;
-}
-
-/* 弹窗 */
-.n-modal {
-  --n-border-radius: var(--radius) !important;
-}
-
-/* 标签页 */
-.n-tabs .n-tab-nav-item--active {
-  --n-color-selected: var(--accent-glow) !important;
-  --n-text-color-selected: var(--accent) !important;
-}
-
-/* 复选框 */
-.n-checkbox {
-  --n-color-checked: var(--accent-soft) !important;
-  --n-border-checked: var(--accent-soft) !important;
-}
-
-/* 滑动条 */
-.n-slider {
-  --n-fill-color: var(--accent) !important;
-  --n-rail-color: var(--border) !important;
-}
-
-/* 单选按钮组 */
-.n-radio-group .n-radio-button--active {
-  --n-color-active: var(--accent-glow) !important;
-  --n-text-color-active: var(--accent) !important;
-  --n-border-color-active: var(--border-accent) !important;
-}
-
-/* 消息提示 */
-.n-message {
-  --n-border-radius: var(--radius-sm) !important;
-}
-
-/* 分割线 */
-.n-divider {
-  --n-color: var(--border) !important;
-}
+.n-select { --n-border-radius: var(--radius-xs) !important; }
+.n-modal { --n-border-radius: var(--radius) !important; }
+.n-tabs .n-tab-nav-item--active { --n-color-selected: var(--accent-glow) !important; --n-text-color-selected: var(--accent) !important; }
+.n-checkbox { --n-color-checked: var(--accent-soft) !important; --n-border-checked: var(--accent-soft) !important; }
+.n-slider { --n-fill-color: var(--accent) !important; --n-rail-color: var(--border) !important; }
+.n-radio-group .n-radio-button--active { --n-color-active: var(--accent-glow) !important; --n-text-color-active: var(--accent) !important; --n-border-color-active: var(--border-accent) !important; }
+.n-message { --n-border-radius: var(--radius-sm) !important; }
+.n-divider { --n-color: var(--border) !important; }

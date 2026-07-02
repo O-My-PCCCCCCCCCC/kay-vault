@@ -57,6 +57,8 @@ import { useAppStore } from './stores/app'
 import LockScreen from './components/LockScreen.vue'
 
 const appStore = useAppStore()
+// 确保主题已应用
+onMounted(() => appStore.setTheme(appStore.theme))
 const router = useRouter()
 const route = useRoute()
 const activeKey = ref((route.name as string) || 'vault')
