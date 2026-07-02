@@ -27,7 +27,7 @@
 
         <n-divider />
 
-        <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--text-secondary)">📋 此页面生成的密码</h3>
+        <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--text-secondary)">📋 生成记录</h3>
         <div v-if="history.length === 0" class="hist-empty">还没有生成过密码</div>
         <div v-else class="hist-list">
           <div v-for="(item, i) in history" :key="i" class="hist-item" @click="cpHist(item)">
