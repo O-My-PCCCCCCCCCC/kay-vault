@@ -294,46 +294,37 @@ fn session_change_password(session_id: String, old_password: String, new_passwor
 /// 导入加密备份文件
 #[tauri::command]
 fn import_from_file(file_path: String, password: String) -> Result<(), String> {
+    // 用 master.verify 的真实盐值派生密钥（文件中的盐值可能不准确）
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    let verify_path = PathBuf::from(home).join(".key-vault").join("master.verify");
+    let verify_data = std::fs::read(&verify_path)
+        .map_err(|_| String::from("未找到主密码校验文件，请先登录一次"))?;
+    if verify_data.len() < 32 {
+        return Err("校验文件损坏".into());
+    }
+    let real_salt = &verify_data[..32];
+
+    // 用正确的盐派生密钥
+    let key = crate::crypto::derive_key(&password, real_salt);
+
+    // 读取备份文件，跳过盐值（不管文件里存的是什么盐）
     let data = std::fs::read(&file_path).map_err(|e| format!("读取文件失败: {}", e))?;
     if data.len() < 32 {
         return Err("无效的备份文件".into());
     }
-    let (salt, encrypted) = data.split_at(32);
+    let encrypted = &data[32..];
 
-    // 尝试用文件中的盐值派生
-    let key = crate::crypto::derive_key(&password, salt);
-    let plaintext = match crate::crypto::decrypt(encrypted, &key) {
-        Ok(p) => p,
-        Err(_) => {
-            // 如果失败，试试用 master.verify 的盐值（兼容旧版备份）
-            let home = std::env::var("HOME")
-                .or_else(|_| std::env::var("USERPROFILE"))
-                .unwrap_or_else(|_| ".".into());
-            let vp = PathBuf::from(home).join(".key-vault").join("master.verify");
-            if vp.exists() {
-                if let Ok(vd) = std::fs::read(&vp) {
-                    if vd.len() >= 32 {
-                        let alt_key = crate::crypto::derive_key(&password, &vd[..32]);
-                        if let Ok(p) = crate::crypto::decrypt(encrypted, &alt_key) {
-                            p // 用 master.verify 盐值解密成功
-                        } else {
-                            return Err(String::from("密码错误，无法导入备份文件"));
-                        }
-                    } else {
-                        return Err(String::from("密码错误，无法导入备份文件"));
-                    }
-                } else {
-                    return Err(String::from("密码错误，无法导入备份文件"));
-                }
-            } else {
-                return Err(String::from("密码错误，无法导入备份文件"));
-            }
-        }
-    };
+    // 解密验证
+    let plaintext = crate::crypto::decrypt(encrypted, &key)
+        .map_err(|_| String::from("密码错误。请输入创建该备份时所用的主密码。"))?;
 
+    // 验证 JSON 格式
     let _: serde_json::Value = serde_json::from_slice(&plaintext)
         .map_err(|_| String::from("备份文件格式错误"))?;
 
+    // 复制到 vault 路径
     let vp = vault_path();
     if let Some(parent) = vp.parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
