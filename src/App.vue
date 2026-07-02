@@ -210,12 +210,18 @@ function onMenuChange(key: string) {
 .sider-menu-wrap {
   flex: 1;
   overflow-y: auto;
+  padding-bottom: 90px; /* 给 fixed footer 让位 */
 }
 .sider-footer {
-  flex-shrink: 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 200px;
   padding: 6px 12px 4px;
   border-top: 1px solid var(--border);
   font-size: 11px;
+  background: var(--bg-secondary);
+  z-index: 10;
 }
 
 .sf-stacked-bar {
