@@ -32,14 +32,14 @@
         <div v-else class="hist-grid">
           <div class="hist-col">
             <div v-for="(item, i) in history.slice(0,5)" :key="i" class="hist-item" @click="cpHist(item)">
-              <span class="hist-idx">#{{ history.length - i }}</span>
+              <span class="hist-idx">#{{ i + 1 }}</span>
               <span class="hist-text">{{ item }}</span>
               <span class="hist-btn">复制</span>
             </div>
           </div>
           <div class="hist-col">
             <div v-for="(item, i) in history.slice(5,10)" :key="i" class="hist-item" @click="cpHist(item)">
-              <span class="hist-idx">#{{ history.length - (i+5) }}</span>
+              <span class="hist-idx">#{{ i + 6 }}</span>
               <span class="hist-text">{{ item }}</span>
               <span class="hist-btn">复制</span>
             </div>
