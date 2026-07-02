@@ -70,12 +70,13 @@
     <n-modal v-model:show="showForm" :title="editingEntry ? '编辑密码' : '新建密码'" preset="card" style="width: 520px">
       <PasswordForm :entry="editingEntry" @save="onFormSave" @close="showForm = false" />    </n-modal>
 
-    <n-modal v-model:show="showDelDialog" title="删除确认" preset="card" style="width: 340px">
-      <p style="margin-bottom:12px;font-size:13px;color:var(--text-secondary)">删除「${delTarget?.name}」需要验证主密码</p>
+    <n-modal v-model:show="showDelDialog" preset="card" style="width:360px">
+      <template #header><span style="color:var(--accent-red);font-weight:600">⚠️ 删除确认</span></template>
+      <div style="margin-bottom:14px;font-size:13px;color:var(--text-secondary)">删除「<strong style="color:var(--text-primary)">{{ delTarget?.name }}</strong>」需要验证主密码</div>
       <n-input v-model:value="delPwd" type="password" size="large" placeholder="输入主密码" @keyup.enter="doDelete" />
-      <div class="s-acts" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
-        <n-button size="small" @click="showDelDialog = false">取消</n-button>
-        <n-button size="small" type="primary" @click="doDelete">确认删除</n-button>
+      <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px">
+        <n-button size="small" @click="showDelDialog = false; delPwd=''">取消</n-button>
+        <n-button size="small" type="error" @click="doDelete" :disabled="!delPwd">确认删除</n-button>
       </div>
     </n-modal>
 </template>
