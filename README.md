@@ -589,4 +589,30 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
+## 💬 Maintenance Note
+
+> **A word to every user**
+
+First of all, thank you for your interest in Kay Vault 🎉
+
+The author is currently a **rising junior high school student (9th grade)** , with very limited time, energy, and financial resources. This project is built with **AI-assisted programming** — the author does not know how to code. All logic, security design, and troubleshooting rely heavily on AI tools.
+
+This means:
+
+- 🐢 **Updates and maintenance may be slow** — please be patient and understanding
+- 🧠 **Code quality may not be on par with professional developers** — if you find issues, Issues and PRs are welcome
+- 💰 **The author has limited funds** — server, domain, and dev environment costs add up
+
+**If this half-finished project helps you in any way, please consider buying the author a can of Monster Energy 🙏** (sponsorship link below)
+
+> The project is small, but the author will do their best to keep it alive. Thanks for your support ❤️
+
+---
+
+### ☕ Support the Author
+
+*Sponsorship link coming soon — payment channel will be set up tomorrow.*
+
 *Created by [追寻光的影](https://github.com/O-My-PCCCCCCCCCC) · 2026*
+
+
