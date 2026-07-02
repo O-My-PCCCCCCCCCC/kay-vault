@@ -158,6 +158,18 @@ body {
   --border-accent: rgba(236, 142, 184, 0.3);
 }
 
+/* ── 自定义（颜色由 JS 动态设置） ── */
+[data-theme="custom"] {
+  --accent-soft: var(--accent);
+  --bg-secondary: var(--bg-card); --bg-elevated: var(--bg-card); --bg-input: var(--bg-primary);
+  --accent-red: #E63946;
+  --text-bright: #ffffff; --text-secondary: #8b949e; --text-muted: #6e7681;
+  --border: rgba(255, 255, 255, 0.06); --border-hover: rgba(255, 255, 255, 0.14);
+  --accent-glow: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-glow-strong: color-mix(in srgb, var(--accent) 22%, transparent);
+  --border-accent: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
 body { background: var(--bg-primary); color: var(--text-primary); }
 
 /* ==========================
