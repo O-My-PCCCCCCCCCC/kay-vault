@@ -29,7 +29,12 @@ export const useVaultStore = defineStore('vault', () => {
       result = result.filter(e =>
         e.name.toLowerCase().includes(q) ||
         e.username.toLowerCase().includes(q) ||
-        e.url.toLowerCase().includes(q)
+        e.url.toLowerCase().includes(q) ||
+        e.notes.toLowerCase().includes(q) ||
+        e.group.toLowerCase().includes(q) ||
+        e.category.toLowerCase().includes(q) ||
+        e.created_at.toLowerCase().includes(q) ||
+        e.updated_at.toLowerCase().includes(q)
       )
     }
     return result

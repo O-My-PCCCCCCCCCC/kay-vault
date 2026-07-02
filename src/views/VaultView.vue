@@ -2,7 +2,20 @@
   <div class="vault-view">
     <!-- 密码库锁定遮罩 -->
     <div class="top-bar">
-      <n-input v-model:value="vault.searchQuery" placeholder="🔍 搜索密码..." clearable size="large" style="width: 300px" />
+      <div class="search-wrap">
+        <n-input v-model:value="vault.searchQuery" placeholder="🔍 搜索密码..." clearable size="large" style="width: 320px" @focus="searchFocused = true" @blur="onSearchBlur" @input="onSearchInput" />
+        <div v-if="vault.searchQuery && searchFocused && searchResults.length > 0" class="search-popup">
+          <div v-for="e in searchResults" :key="e.entry.id" class="sp-item" @mousedown.prevent="openEdit(e.entry)">
+            <div class="sp-name" v-html="hl(e.entry.name)"></div>
+            <div class="sp-matches">
+              <span v-for="(m, i) in e.matches" :key="i" class="sp-tag">{{ m.field }}: <span v-html="hl(m.text)"></span></span>
+            </div>
+          </div>
+        </div>
+        <div v-if="vault.searchQuery && searchFocused && searchResults.length === 0" class="search-popup search-empty">
+          <div class="sp-empty">没有匹配的密码</div>
+        </div>
+      </div>
       <div class="top-acts">
         <n-button type="primary" size="large" @click="openCreate">➕ 新增</n-button>
       </div>
@@ -74,6 +87,44 @@ const editingEntry = ref<VaultEntry | null>(null)
 const showPwd = ref<string | null>(null)
 const view = ref('all')
 const openGroups = ref(new Set<string>())
+const searchFocused = ref(false)
+
+// 搜索结果（带匹配字段）
+const searchResults = computed(() => {
+  const q = vault.searchQuery?.toLowerCase().trim()
+  if (!q) return []
+  return vault.entries.filter(e => {
+    const fields = [
+      { key: '名称', val: e.name },
+      { key: '用户名', val: e.username },
+      { key: '网址', val: e.url },
+      { key: '备注', val: e.notes },
+      { key: '分组', val: e.group },
+      { key: '分类', val: e.category },
+    ]
+    const matches: { field: string; text: string; idx: number }[] = []
+    for (const f of fields) {
+      const idx = f.val.toLowerCase().indexOf(q)
+      if (idx !== -1) matches.push({ field: f.key, text: f.val, idx })
+    }
+    if (matches.length > 0) {
+      (e as any)._matches = matches.sort((a, b) => a.idx - b.idx)
+      return true
+    }
+    return false
+  }).map(e => ({ entry: e, matches: (e as any)._matches }))
+})
+
+// 高亮文本
+function hl(text: string): string {
+  const q = vault.searchQuery?.trim()
+  if (!q) return text
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replace(re, '<mark class="h">$1</mark>')
+}
+
+function onSearchInput() { /* 响应式已自动处理 */ }
+function onSearchBlur() { setTimeout(() => { searchFocused.value = false }, 200) }
 
 const listTitle = computed(() => view.value === 'all' ? '📦 全部密码' : '📂 ' + view.value.replace('/', ' › '))
 const items = computed(() => {
@@ -132,6 +183,21 @@ async function openUrl(url: string) {
 .tree-item.active { background: var(--accent-red-glow-strong); color: var(--accent-red); font-weight: 600; border-left-color: var(--accent-red); }
 .tree-item.sub { padding-left: 28px; font-size: 12px; }
 .badge { margin-left: auto; font-size: 10px; color: var(--text-muted); background: rgba(255,255,255,0.03); padding: 0 6px; border-radius: 6px; }
+
+/* 搜索弹窗 */
+.search-wrap { position: relative; }
+.search-popup { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 320px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.search-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.sp-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.08s; }
+.sp-item:last-child { border-bottom: none; }
+.sp-item:hover { background: var(--accent-red-glow); }
+.sp-name { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.sp-matches { display: flex; flex-wrap: wrap; gap: 3px; }
+.sp-tag { font-size: 11px; color: var(--text-muted); font-family: monospace; background: rgba(255,255,255,0.03); padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+.sp-empty { color: var(--text-muted); padding: 8px; text-align: center; font-size: 13px; }
+
+/* 搜索高亮 */
+:deep(.h) { background: rgba(229,192,123,0.25); color: #e5c07b; border-radius: 2px; padding: 0 1px; font-style: normal; }
 .list-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .list-header { font-size: 14px; font-weight: 600; color: var(--text-primary); padding: 2px 0 8px; flex-shrink: 0; }
 .list-empty { color: var(--text-muted); padding: 20px; text-align: center; }
