@@ -68,7 +68,15 @@
     </div>
 
     <n-modal v-model:show="showForm" :title="editingEntry ? '编辑密码' : '新建密码'" preset="card" style="width: 520px">
-      <PasswordForm :entry="editingEntry" @save="onFormSave" @close="showForm = false" />
+      <PasswordForm :entry="editingEntry" @save="onFormSave" @close="showForm = false" />    </n-modal>
+
+    <n-modal v-model:show="showDelDialog" title="删除确认" preset="card" style="width: 340px">
+      <p style="margin-bottom:12px;font-size:13px;color:var(--text-secondary)">删除「${delTarget?.name}」需要验证主密码</p>
+      <n-input v-model:value="delPwd" type="password" size="large" placeholder="输入主密码" @keyup.enter="doDelete" />
+      <div class="s-acts" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+        <n-button size="small" @click="showDelDialog = false">取消</n-button>
+        <n-button size="small" type="primary" @click="doDelete">确认删除</n-button>
+      </div>
     </n-modal>
 </template>
 
@@ -76,9 +84,11 @@
 import { ref, computed } from 'vue'
 import { useMessage } from 'naive-ui'
 import { invoke } from '@tauri-apps/api/core'
+import { useAppStore } from '../stores/app'
 import { useVaultStore, type VaultEntry } from '../stores/vault'
 import PasswordForm from '../components/PasswordForm.vue'
 
+const app = useAppStore()
 const vault = useVaultStore()
 const msg = useMessage()
 
@@ -88,6 +98,9 @@ const showPwd = ref<string | null>(null)
 const view = ref('all')
 const openGroups = ref(new Set<string>())
 const searchFocused = ref(false)
+const showDelDialog = ref(false)
+const delTarget = ref<VaultEntry | null>(null)
+const delPwd = ref('')
 
 // 搜索结果（带匹配字段）
 const searchResults = computed(() => {
@@ -143,18 +156,28 @@ function selectCat(g: string, c: string) { openGroups.value = new Set([g]); view
 function itemCount(grp: any) { return grp.categories.reduce((s: number, c: any) => s + c.items.length, 0) }
 function togglePwd(id: string) { showPwd.value = showPwd.value === id ? null : id }
 
-function openCreate() { editingEntry.value = null; showForm.value = true }
-function openEdit(e: VaultEntry) { editingEntry.value = { ...e }; showForm.value = true }
+function openCreate() { if (app.vaultLocked) { msg.warning('密码库已锁定'); return }; editingEntry.value = null; showForm.value = true }
+function openEdit(e: VaultEntry) { if (app.vaultLocked) { msg.warning('密码库已锁定'); return }; editingEntry.value = { ...e }; showForm.value = true }
 function onFormSave(e: VaultEntry) {
   if (editingEntry.value) { vault.updateEntry(e); msg.success('已更新') }
   else { vault.addEntry(e); msg.success('已添加') }
   showForm.value = false
 }
 
-async function confirmDelete(e: VaultEntry) {
-  if (window.confirm(`确定要永久删除「${e.name}」的所有密码数据吗？\n此操作不可撤销。`)) {
-    await vault.deleteEntry(e.id); msg.success('已删除')
-  }
+function confirmDelete(e: VaultEntry) {
+  if (app.vaultLocked) { msg.warning('密码库已锁定'); return }
+  delTarget.value = e; delPwd.value = ''; showDelDialog.value = true
+}
+
+async function doDelete() {
+  if (!delTarget.value || !delPwd.value) return
+  // 验证主密码
+  try {
+    await invoke('session_login', { password: delPwd.value })
+    await vault.deleteEntry(delTarget.value.id)
+    msg.success('已删除')
+    showDelDialog.value = false; delTarget.value = null; delPwd.value = ''
+  } catch { msg.error('主密码错误，无法删除') }
 }
 
 async function copy(t: string, m: string) {

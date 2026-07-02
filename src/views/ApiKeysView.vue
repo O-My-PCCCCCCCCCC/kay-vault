@@ -50,6 +50,15 @@
       <div class="fbtns"><n-button size="large" ghost @click="fm=false">取消</n-button><n-button size="large" type="primary" @click="save">保存</n-button></div>
     </n-modal>
   </div>
+
+    <n-modal v-model:show="showDelAk" title="删除确认" preset="card" style="width: 340px">
+      <p style="margin-bottom:12px;font-size:13px;color:var(--text-secondary)">删除需要验证主密码</p>
+      <n-input v-model:value="delAkPwd" type="password" size="large" placeholder="输入主密码" @keyup.enter="doDelAk" />
+      <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+        <n-button size="small" @click="showDelAk = false">取消</n-button>
+        <n-button size="small" type="primary" @click="doDelAk">确认删除</n-button>
+      </div>
+    </n-modal>
 </template>
 
 <script setup lang="ts">
@@ -64,6 +73,7 @@ const msg = useMessage()
 
 const keys = ref<AK[]>([]), q = ref(''), loading = ref(false), sk = ref<number|null>(null)
 const sv = ref('all'), fm = ref(false), fp = ref(false), ei = ref(-1), sf = ref(false), hi = ref<number|null>(null)
+const showDelAk = ref(false), delAkPwd = ref(''), delAkTarget = ref(-1)
 const f = reactive({ name: '', key: '', provider: '', base_url: '', notes: '' })
 
 const po = [
@@ -153,10 +163,11 @@ function mask(k: string) { if (!k||k.length<=8) return '••••••••
 function ts(i: number) { sk.value = sk.value === i ? null : i }
 async function load() { if (!app.sessionId) return; loading.value=true; try { keys.value = await invoke<AK[]>('api_keys_load',{sessionId:app.sessionId}) } catch{} finally{loading.value=false} }
 async function saveAll() { if (!app.sessionId) return; await invoke('api_keys_save',{keys:keys.value,sessionId:app.sessionId}) }
-function add() { ei.value=-1; f.name=''; f.key=''; f.provider=''; f.base_url=''; f.notes=''; fm.value=true }
-function edit(i: number) { const k = items.value[i]; const idx = keys.value.indexOf(k); ei.value=idx; f.name=k.name; f.key=k.key; f.provider=k.provider; f.base_url=k.base_url; f.notes=k.notes||''; fm.value=true }
+function add() { if (app.apiLocked) { msg.warning("API 密钥已锁定"); return }; ei.value=-1; f.name=''; f.key=''; f.provider=''; f.base_url=''; f.notes=''; fm.value=true }
+function edit(i: number) { if (app.apiLocked) { msg.warning("API 密钥已锁定"); return }; const k = items.value[i]; const idx = keys.value.indexOf(k); ei.value=idx; f.name=k.name; f.key=k.key; f.provider=k.provider; f.base_url=k.base_url; f.notes=k.notes||''; fm.value=true }
 function save() { if (!f.name||!f.key) { msg.warning('请填写完整'); return }; const e: AK = { name:f.name, key:f.key, provider:f.provider||'自定义', base_url:f.base_url||du.value, notes:f.notes||'', created_at:new Date().toISOString() }; if (ei.value>=0) { keys.value[ei.value] = {...e, created_at: keys.value[ei.value].created_at} } else { keys.value.push(e) }; saveAll().then(()=>{msg.success('已保存');fm.value=false}) }
-async function del(i: number) { if (!window.confirm(`删除「${keys.value[i].name}」？`)) return; keys.value.splice(i,1); await saveAll(); msg.success('已删除') }
+function del(i: number) { if (app.apiLocked) { msg.warning("API 密钥已锁定"); return }; delAkTarget.value = i; delAkPwd.value = ""; showDelAk.value = true }
+async function doDelAk() { if (delAkTarget.value < 0 || !delAkPwd.value) return; try { await invoke('session_login', { password: delAkPwd.value }); keys.value.splice(delAkTarget.value, 1); await saveAll(); msg.success('已删除') } catch { msg.error('主密码错误，无法删除') } finally { showDelAk.value = false; delAkTarget.value = -1; delAkPwd.value = '' } }
 async function cpKey(k: string) { try { await navigator.clipboard.writeText(k); msg.success('已复制') } catch { msg.error('复制失败') } }
 onMounted(load)
 </script>
