@@ -180,10 +180,10 @@ onMounted(() => {
 })
 
 const menuOptions = [
-  { label: '我的密码', key: 'vault', icon: () => h('img', { src: '/icons/key.png', class: 'mi' }) },
-  { label: 'API 密钥', key: 'api-keys', icon: () => h('img', { src: '/icons/api.png', class: 'mi' }) },
-  { label: '生成器', key: 'generator', icon: () => h('img', { src: '/icons/gen.png', class: 'mi' }) },
-  { label: '设置', key: 'settings', icon: () => h('img', { src: '/icons/set.png', class: 'mi' }) },
+  { label: '我的密码', key: 'vault', icon: () => h('img', { src: '/icons/vault.svg', class: 'mi' }) },
+  { label: 'API 密钥', key: 'api-keys', icon: () => h('img', { src: '/icons/keys.svg', class: 'mi' }) },
+  { label: '生成器', key: 'generator', icon: () => h('img', { src: '/icons/gen.svg', class: 'mi' }) },
+  { label: '设置', key: 'settings', icon: () => h('img', { src: '/icons/settings.svg', class: 'mi' }) },
 ]
 
 const routeMap: Record<string, string> = {
@@ -214,7 +214,8 @@ function onMenuChange(key: string) {
   flex-shrink: 0;
   font-family: var(--font-mono);
 }
-:deep(.mi) { width: 18px; height: 18px; border-radius: 4px; vertical-align: middle; }
+:deep(.mi) { width: 20px; height: 20px; vertical-align: middle; color: var(--text-secondary); }
+:deep(.n-menu-item--active) .mi { color: var(--accent) !important; }
 .sider-menu-wrap {
   flex: 1;
   overflow-y: auto;
