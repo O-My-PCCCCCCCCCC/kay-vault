@@ -8,8 +8,8 @@
         <div class="gen-card">
           <div class="out-row">
             <n-input :value="pwd" readonly size="large" placeholder="点击生成" />
-            <n-button @click="gen" circle><template #icon>🔄</template></n-button>
-            <n-button type="primary" @click="cpy" :disabled="!pwd">复制</n-button>
+            <n-button type="primary" @click="gen">🔄 生成</n-button>
+            <n-button @click="cpy" :disabled="!pwd">📋 复制</n-button>
           </div>
           <n-divider style="margin: 12px 0" />
           <div class="opt-row">
