@@ -145,7 +145,7 @@ onMounted(() => { generate() })
 
 <style scoped>
 .genv { padding: 16px 20px; height: 100vh; overflow-y: auto; }
-.page-title { font-size: 16px; font-weight: 700; color: var(--accent-red); margin-bottom: 16px; }
+.page-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
 .gen-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .out-row { display: flex; gap: 8px; align-items: center; }
 .opt-row { display: flex; align-items: center; gap: 16px; }

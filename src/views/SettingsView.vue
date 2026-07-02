@@ -173,7 +173,7 @@ async function doChangePwd() {
 
 <style scoped>
 .settings-view { padding: 16px 20px; overflow-y: auto; height: 100vh; font-size: 13px; }
-.s-title { font-size: 16px; font-weight: 700; color: var(--accent-red); }
+.s-title { font-size: 16px; font-weight: 700; color: var(--accent); }
 .s-group { padding: 4px 0; }
 .s-group-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 .s-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }

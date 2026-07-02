@@ -206,10 +206,11 @@ function onMenuChange(key: string) {
   padding: 18px 16px;
   font-size: 17px;
   font-weight: 700;
-  color: var(--accent-red);
+  color: var(--accent);
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  font-family: var(--font-mono);
 }
 .sider-menu-wrap {
   flex: 1;
