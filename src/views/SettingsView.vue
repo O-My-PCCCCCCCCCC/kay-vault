@@ -20,16 +20,11 @@
 
     <div class="s-group">
       <div class="s-group-title">🎨 主题</div>
-      <div class="s-row">
-        <span class="s-label">配色</span>
-        <n-radio-group v-model:value="appStore.theme" @update:value="onThemeChange">
-          <n-radio-button value="red">🔴 凯伊红</n-radio-button>
-          <n-radio-button value="blue">🔵 深海蓝</n-radio-button>
-          <n-radio-button value="purple">🟣 暗夜紫</n-radio-button>
-          <n-radio-button value="green">🟢 森林绿</n-radio-button>
-          <n-radio-button value="orange">🟠 落日橙</n-radio-button>
-          <n-radio-button value="pink">🩷 樱花粉</n-radio-button>
-        </n-radio-group>
+      <div class="theme-list">
+        <div v-for="t in themes" :key="t.id" class="theme-item" :class="{on:appStore.theme===t.id}" @click="onThemeChange(t.id)">
+          <div class="ti-preview"><div class="ti-bar" :style="{background:t.accent}"></div><div class="ti-body" :style="{background:t.bg}"></div></div>
+          <span class="ti-name">{{ t.label }}</span>
+        </div>
       </div>
     </div>
 
@@ -112,6 +107,15 @@ const currentPwd = ref('')
 const newPwd = ref('')
 const confirmPwd = ref('')
 const changing = ref(false)
+
+const themes = [
+  { id: 'red', label: '🔴 凯伊红', accent: '#E63946', bg: '#0a0e1a' },
+  { id: 'blue', label: '🔵 深海蓝', accent: '#58a6ff', bg: '#0c1017' },
+  { id: 'purple', label: '🟣 暗夜紫', accent: '#bc8cff', bg: '#0e0a18' },
+  { id: 'green', label: '🟢 森林绿', accent: '#3fb950', bg: '#0a1410' },
+  { id: 'orange', label: '🟠 落日橙', accent: '#d29922', bg: '#16100a' },
+  { id: 'pink', label: '🩷 樱花粉', accent: '#ec8eb8', bg: '#160a10' },
+]
 
 const lockOptions = [
   { label: '1分', value: 1 }, { label: '5分', value: 5 },
@@ -200,4 +204,12 @@ async function doChangePwd() {
 .s-path { font-size: 12px; color: var(--text-secondary); font-family: monospace; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 4px; word-break: break-all; }
 .s-label { font-size: 13px; color: var(--text-secondary); min-width: 80px; }
 .s-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.theme-list { display: flex; flex-direction: column; gap: 4px; }
+.theme-item { display: flex; align-items: center; gap: 10px; padding: 5px 8px; border-radius: var(--radius-xs); cursor: pointer; border: 1px solid var(--border); transition: all 0.12s; }
+.theme-item:hover { border-color: var(--border-hover); background: var(--bg-hover); }
+.theme-item.on { border-color: var(--accent); background: var(--accent-glow); }
+.ti-preview { width: 32px; height: 20px; border-radius: 3px; overflow: hidden; display: flex; flex-direction: column; flex-shrink: 0; }
+.ti-bar { height: 6px; }
+.ti-body { flex: 1; }
+.ti-name { font-size: 13px; color: var(--text-secondary); }
 </style>
