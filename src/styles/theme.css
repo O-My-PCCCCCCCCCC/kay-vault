@@ -9,6 +9,15 @@
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2);
+  /* 默认配色（凯伊红） */
+  --bg-primary: #0a0e1a; --bg-secondary: #111628; --bg-card: #181e33;
+  --bg-hover: rgba(230, 57, 70, 0.05); --bg-elevated: #202640; --bg-input: #0d1120;
+  --accent: #E63946; --accent-soft: #c62a36; --accent-red: #E63946;
+  --accent-glow: rgba(230, 57, 70, 0.12); --accent-glow-strong: rgba(230, 57, 70, 0.22);
+  --text-primary: #eeeff5; --text-bright: #ffffff;
+  --text-secondary: #9ca3b8; --text-muted: #6b7280;
+  --border: rgba(255, 255, 255, 0.06); --border-hover: rgba(255, 255, 255, 0.12);
+  --border-accent: rgba(230, 57, 70, 0.3);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
