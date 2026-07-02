@@ -213,17 +213,17 @@ function onMenuChange(key: string) {
 }
 .sider-footer {
   flex-shrink: 0;
-  padding: 8px 12px;
+  padding: 6px 12px 4px;
   border-top: 1px solid var(--border);
   font-size: 11px;
 }
 
 .sf-stacked-bar {
   display: flex;
-  height: 8px;
-  border-radius: 4px;
+  height: 6px;
+  border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   background: rgba(255, 255, 255, 0.04);
 }
 .sf-seg { transition: width 0.3s; }
@@ -234,8 +234,8 @@ function onMenuChange(key: string) {
 .sf-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 .sf-legend-item {
   display: inline-flex;
@@ -258,7 +258,8 @@ function onMenuChange(key: string) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 1px 0;
+  margin: 0;
+  line-height: 1.5;
   color: var(--text-muted);
 }
 .sf-val {
