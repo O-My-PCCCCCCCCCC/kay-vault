@@ -180,12 +180,13 @@ onMounted(() => {
 const menuOptions = [
   { label: '🔑 我的密码', key: 'vault' },
   { label: '🔐 API 密钥', key: 'api-keys' },
-  { label: '🎲 生成器', key: 'generator' },
+  { label: '🎲 密码生成器', key: 'generator' },
+  { label: '🎲 PIN生成器', key: 'terminal' },
   { label: '⚙️ 设置', key: 'settings' },
 ]
 
 const routeMap: Record<string, string> = {
-  vault: '/', 'api-keys': '/api-keys', generator: '/generator', settings: '/settings',
+  vault: '/', 'api-keys': '/api-keys', generator: '/generator', terminal: '/terminal', settings: '/settings',
 }
 
 function onMenuChange(key: string) {
