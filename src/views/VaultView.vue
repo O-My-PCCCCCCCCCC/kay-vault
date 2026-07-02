@@ -45,8 +45,8 @@
         <div class="list-panel">
           <div class="list-header">{{ listTitle }}</div>
           <div v-if="items.length === 0" class="list-empty">空</div>
-          <div v-else class="list-body">
-            <div v-for="entry in items" :key="entry.id" class="entry" @click="openEdit(entry)">
+          <div v-else class="list-body" :class="{ locked: app.vaultLocked }">
+            <div v-for="entry in items" :key="entry.id" class="entry" :class="{ dim: app.vaultLocked }" @click="openEdit(entry)">
               <div class="e-icon">{{ entry.name.charAt(0).toUpperCase() }}</div>
               <div class="e-body">
                 <div class="e-name">{{ entry.name }}</div>
@@ -232,10 +232,12 @@ function togglePwd(id: string) {
 .list-header { font-size: 14px; font-weight: 600; color: var(--text-primary); padding: 2px 0 8px; flex-shrink: 0; }
 .list-empty { color: var(--text-muted); padding: 20px; text-align: center; }
 .list-body { flex: 1; overflow-y: auto; }
+.list-body.locked { pointer-events: none; opacity: 0.5; }
 
 .entry { display: flex; align-items: flex-start; gap: 8px; padding: 7px 8px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.1s; }
 .entry:last-child { border-bottom: none; }
 .entry:hover { background: rgba(230,57,70,0.03); }
+.entry.dim { opacity: 0.7; }
 .e-icon { width: 26px; height: 26px; border-radius: 6px; margin-top: 1px; flex-shrink: 0; background: linear-gradient(135deg, var(--accent-red), var(--accent-red-soft)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; color: #fff; }
 .e-body { flex: 1; min-width: 0; }
 .e-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }

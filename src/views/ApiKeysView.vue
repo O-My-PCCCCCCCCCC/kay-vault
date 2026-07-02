@@ -27,7 +27,7 @@
       <div class="lp">
         <div class="lh">{{ sv === 'all' ? '📦 全部密钥' : '📁 '+sv }}</div>
         <div v-if="items.length===0" class="le">空</div>
-        <div v-else class="lb">
+        <div v-else class="lb" :class="{lock:app.apiLocked}">
           <div v-for="(k,i) in items" :key="i" class="er" :class="{on:hi===idx(k)}" @click="edit(i)">
             <div class="eico">{{ icon(k.provider) }}</div>
             <div class="eb">
@@ -201,6 +201,7 @@ onMounted(load)
 .lh { font-size: 14px; font-weight: 600; color: var(--text-primary); padding: 2px 0 8px; flex-shrink: 0; }
 .le { color: var(--text-muted); padding: 20px; text-align: center; }
 .lb { flex: 1; overflow-y: auto; }
+.lb.lock { pointer-events: none; opacity: 0.5; }
 .er { display: flex; align-items: flex-start; gap: 8px; padding: 7px 8px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.1s; }
 .er:hover { background: rgba(230,57,70,0.03); }
 .eico { font-size: 18px; width: 28px; text-align: center; margin-top: 1px; flex-shrink: 0; }
