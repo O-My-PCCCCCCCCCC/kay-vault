@@ -1,97 +1,82 @@
 <template>
-  <div class="settings-view">
-    <h2 class="s-title">⚙️ 设置</h2>
+  <div class="term">
+    <div class="term-bar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="bar-text">➜  ~/settings</span></div>
 
-    <n-divider style="margin: 8px 0" />
+    <div class="term-body">
+      <div class="section">
+        <div class="sec-title">┌──( <span class="sc">🔒 安全</span> )</div>
 
-    <div class="s-group">
-      <div class="s-group-title">🔒 安全</div>
-      <div class="s-row">
-        <span class="s-label">自动锁定</span>
-        <n-select v-model:value="autoLock" :options="lockOptions" style="width: 130px" size="small" />
+        <div class="row">
+          <span class="rk">$</span> <span class="rc">auto-lock</span> <span class="rf">--分钟</span>
+          <n-select v-model:value="autoLock" :options="lockOptions" style="width:120px" size="tiny" class="tsel" />
+        </div>
+
+        <div class="row">
+          <span class="rk">$</span> <span class="rc">passwd</span> <span class="rf">--修改</span>
+          <button class="btn" @click="showChangePwd = true">改密码</button>
+        </div>
       </div>
-      <div class="s-row">
-        <span class="s-label">主密码</span>
-        <n-button size="small" type="primary" @click="showChangePwd = true">修改</n-button>
+
+      <div class="sec-div">───</div>
+
+      <div class="section">
+        <div class="sec-title">┌──( <span class="sc">🔐 独立锁定</span> )</div>
+
+        <div class="row">
+          <span class="rk">$</span> <span class="rc">vault</span>
+          <button v-if="!appStore.vaultLocked" class="btn" @click="appStore.lockVault();msg.success('已锁定')">🔒 锁定</button>
+          <button v-else class="btn suc" @click="appStore.unlockVault();msg.success('已解锁')">🔓 解锁</button>
+        </div>
+
+        <div class="row">
+          <span class="rk">$</span> <span class="rc">api-keys</span>
+          <button v-if="!appStore.apiLocked" class="btn" @click="appStore.lockApi();msg.success('已锁定')">🔒 锁定</button>
+          <button v-else class="btn suc" @click="appStore.unlockApi();msg.success('已解锁')">🔓 解锁</button>
+        </div>
+      </div>
+
+      <div class="sec-div">───</div>
+
+      <div class="section">
+        <div class="sec-title">┌──( <span class="sc">📂 备份路径</span> )</div>
+
+        <div class="row row-col">
+          <div class="path">{{ backupPath || '未设置' }}</div>
+          <span class="rk">$</span> <span class="rc">backup</span> <span class="rf">--set-path</span>
+          <button class="btn" @click="pickBackupFolder">选择文件夹</button>
+        </div>
+      </div>
+
+      <div class="sec-div">───</div>
+
+      <div class="section">
+        <div class="sec-title">┌──( <span class="sc">🔐 设备认证</span> )</div>
+        <DeviceAuthList />
+      </div>
+
+      <div class="sec-div">───</div>
+
+      <div class="section">
+        <div class="sec-title">┌──( <span class="sc">💾 备份与还原</span> )</div>
+        <BackupPanel />
       </div>
     </div>
 
-    <n-divider style="margin: 8px 0" />
-
-    <div class="s-group">
-      <div class="s-group-title">📂 备份路径</div>
-      <div class="s-row s-row-col">
-        <div class="s-path">{{ backupPath || '未设置' }}</div>
-        <n-button size="small" @click="pickBackupFolder">选择文件夹</n-button>
+    <!-- 改密码弹窗 -->
+    <div v-if="showChangePwd" class="modal-overlay" @click.self="showChangePwd = false">
+      <div class="modal">
+        <div class="modal-bar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="bar-text">passwd --change</span></div>
+        <div class="modal-body">
+          <div class="row"><span class="rk">└─$</span> <span class="rc">当前密码</span> <input v-model="currentPwd" type="password" class="ti" placeholder="········" /></div>
+          <div class="row"><span class="rk">└─$</span> <span class="rc">新密码</span> <input v-model="newPwd" type="password" class="ti" placeholder="········" /></div>
+          <div class="row"><span class="rk">└─$</span> <span class="rc">确认密码</span> <input v-model="confirmPwd" type="password" class="ti" placeholder="········" /></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn" @click="showChangePwd = false">取消</button>
+            <button class="btn suc" @click="doChangePwd" :disabled="changing">{{ changing ? '⏳' : '✓' }} 确认修改</button>
+          </div>
+        </div>
       </div>
     </div>
-
-    <n-divider style="margin: 8px 0" />
-
-    <div class="s-group">
-      <div class="s-group-title">🔐 独立锁定</div>
-      <div class="s-row">
-        <span class="s-label">密码库</span>
-        <n-button v-if="!appStore.vaultLocked" size="small" @click="doLockVault">🔒 锁定</n-button>
-        <n-button v-else size="small" type="primary" @click="showUnlockVault = true">🔓 已锁定·解锁</n-button>
-      </div>
-      <div class="s-row">
-        <span class="s-label">API 密钥</span>
-        <n-button v-if="!appStore.apiLocked" size="small" @click="doLockApi">🔒 锁定</n-button>
-        <n-button v-else size="small" type="primary" @click="showUnlockApi = true">🔓 已锁定·解锁</n-button>
-      </div>
-    </div>
-
-    <n-divider style="margin: 8px 0" />
-
-    <div class="s-group">
-      <div class="s-group-title">🔐 设备认证</div>
-      <DeviceAuthList />
-    </div>
-
-    <n-divider style="margin: 8px 0" />
-
-    <div class="s-group">
-      <div class="s-group-title">💾 备份与还原</div>
-      <BackupPanel />
-    </div>
-
-    <!-- 解锁密码库 -->
-    <n-modal v-model:show="showUnlockVault" title="解锁密码库" preset="card" style="width: 340px">
-      <n-input v-model:value="unlockPwd" type="password" size="large" placeholder="输入主密码解锁" @keyup.enter="doUnlockVault" />
-      <div class="s-acts">
-        <n-button size="small" @click="showUnlockVault = false">取消</n-button>
-        <n-button size="small" type="primary" @click="doUnlockVault">解锁</n-button>
-      </div>
-    </n-modal>
-
-    <!-- 解锁 API -->
-    <n-modal v-model:show="showUnlockApi" title="解锁 API 密钥" preset="card" style="width: 340px">
-      <n-input v-model:value="unlockPwd" type="password" size="large" placeholder="输入主密码解锁" @keyup.enter="doUnlockApi" />
-      <div class="s-acts">
-        <n-button size="small" @click="showUnlockApi = false">取消</n-button>
-        <n-button size="small" type="primary" @click="doUnlockApi">解锁</n-button>
-      </div>
-    </n-modal>
-
-    <!-- 修改主密码弹窗 -->
-    <n-modal v-model:show="showChangePwd" title="修改主密码" preset="card" style="width: 380px">
-      <n-form label-placement="top">
-        <n-form-item label="当前主密码">
-          <n-input v-model:value="currentPwd" type="password" size="small" />
-        </n-form-item>
-        <n-form-item label="新主密码">
-          <n-input v-model:value="newPwd" type="password" size="small" />
-        </n-form-item>
-        <n-form-item label="确认新密码">
-          <n-input v-model:value="confirmPwd" type="password" size="small" />
-        </n-form-item>
-      </n-form>
-      <div class="s-acts">
-        <n-button size="small" @click="showChangePwd = false">取消</n-button>
-        <n-button size="small" type="primary" @click="doChangePwd" :loading="changing">确认</n-button>
-      </div>
-    </n-modal>
   </div>
 </template>
 
@@ -105,27 +90,23 @@ import DeviceAuthList from '../components/DeviceAuthList.vue'
 import BackupPanel from '../components/BackupPanel.vue'
 
 const appStore = useAppStore()
-const message = useMessage()
+const msg = useMessage()
 const autoLock = ref(5)
 const backupPath = ref('')
 const showChangePwd = ref(false)
-const showUnlockVault = ref(false)
-const showUnlockApi = ref(false)
-const unlockPwd = ref('')
 const currentPwd = ref('')
 const newPwd = ref('')
 const confirmPwd = ref('')
 const changing = ref(false)
 
 const lockOptions = [
-  { label: '1分', value: 1 }, { label: '5分', value: 5 },
-  { label: '15分', value: 15 }, { label: '30分', value: 30 }, { label: '永不', value: 0 },
+  { label: '1m', value: 1 }, { label: '5m', value: 5 },
+  { label: '15m', value: 15 }, { label: '30m', value: 30 }, { label: '∞', value: 0 },
 ]
 
 interface AppCfg { auto_lock_minutes: number; backup_path: string; categories: string[] }
 const savedCfg = ref<AppCfg | null>(null)
 
-// 加载配置
 onMounted(async () => {
   try {
     const cfg = await invoke<AppCfg>('config_load')
@@ -133,10 +114,9 @@ onMounted(async () => {
     autoLock.value = cfg.auto_lock_minutes ?? 5
     backupPath.value = cfg.backup_path || 'C:/LuSh-Password-Backup'
     appStore.autoLockMinutes = autoLock.value
-  } catch { /* 使用默认值 */ }
+  } catch { /* 默认值 */ }
 })
 
-// 保存配置（auto_lock_minutes + backup_path，保留 categories）
 async function saveCfg() {
   if (!savedCfg.value) return
   try {
@@ -160,32 +140,14 @@ async function pickBackupFolder() {
   if (selected) {
     backupPath.value = selected as string
     await saveCfg()
-    message.success('备份路径已更新')
+    msg.success('备份路径已更新')
   }
 }
 
-function doLockVault() {
-  appStore.lockVault(); message.success('密码库已锁定')
-}
-
-function doLockApi() {
-  appStore.lockApi(); message.success('API 密钥已锁定')
-}
-
-function doUnlockVault() {
-  appStore.unlockVault(); showUnlockVault.value = false
-  message.success('密码库已解锁')
-}
-
-function doUnlockApi() {
-  appStore.unlockApi(); showUnlockApi.value = false
-  message.success('API 密钥已解锁')
-}
-
 async function doChangePwd() {
-  if (!currentPwd.value || !newPwd.value) { message.warning('请填写完整'); return }
-  if (newPwd.value !== confirmPwd.value) { message.warning('两次密码不一致'); return }
-  if (!appStore.sessionId) { message.error('未登录'); return }
+  if (!currentPwd.value || !newPwd.value) { msg.warning('请填写完整'); return }
+  if (newPwd.value !== confirmPwd.value) { msg.warning('两次密码不一致'); return }
+  if (!appStore.sessionId) { msg.error('未登录'); return }
   changing.value = true
   try {
     const newSessionId = await invoke<string>('session_change_password', {
@@ -194,22 +156,60 @@ async function doChangePwd() {
       newPassword: newPwd.value,
     })
     appStore.sessionId = newSessionId
-    message.success('已修改')
+    msg.success('已修改')
     showChangePwd.value = false
     currentPwd.value = ''; newPwd.value = ''; confirmPwd.value = ''
-  } catch (e: any) { message.error(String(e)) }
+  } catch (e: any) { msg.error(String(e)) }
   finally { changing.value = false }
 }
 </script>
 
 <style scoped>
-.settings-view { padding: 16px 20px; overflow-y: auto; height: 100vh; font-size: 13px; }
-.s-title { font-size: 16px; font-weight: 700; color: var(--accent-red); }
-.s-group { padding: 4px 0; }
-.s-group-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-.s-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.s-row-col { flex-direction: column; align-items: stretch; gap: 6px; }
-.s-path { font-size: 12px; color: var(--text-secondary); font-family: monospace; padding: 6px 8px; background: rgba(255,255,255,0.03); border-radius: 4px; word-break: break-all; }
-.s-label { font-size: 13px; color: var(--text-secondary); min-width: 80px; }
-.s-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.term { height: 100vh; display: flex; flex-direction: column; background: #0b0e14; font-family: 'Consolas','Courier New',monospace; font-size: 14px; color: #abb2bf; }
+
+/* 标题栏 */
+.term-bar { display: flex; align-items: center; gap: 8px; padding: 9px 16px; background: #1a1d27; flex-shrink: 0; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.red { background: #ff5f57; } .yellow { background: #ffbd2e; } .green { background: #28c840; }
+.bar-text { margin-left: 8px; font-size: 12px; color: #5c6370; }
+
+/* 内容 */
+.term-body { flex: 1; overflow-y: auto; padding: 12px 20px 30px; }
+.section { margin-bottom: 4px; }
+.sec-title { color: #5c6370; font-size: 12px; margin-bottom: 8px; }
+.sc { color: #e5c07b; }
+.sec-div { color: #2c313a; font-size: 13px; margin: 8px 0; text-align: center; }
+
+/* 行 */
+.row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
+.row-col { flex-direction: column; align-items: stretch; gap: 4px; }
+.rk { color: #98c379; font-size: 13px; flex-shrink: 0; }
+.rc { color: #61afef; font-size: 13px; }
+.rf { color: #d19a66; font-size: 12px; }
+
+/* 输入框 */
+.ti { background: transparent; border: none; outline: none; color: #abb2bf; font-family: inherit; font-size: 14px; width: 200px; border-bottom: 1px solid #2c313a; padding: 1px 4px; }
+.ti:focus { border-bottom-color: #61afef; }
+.ti::placeholder { color: #3b4048; }
+
+/* 选择器 */
+:deep(.tsel) .n-base-selection { background: #1a1d27 !important; border-color: #2c313a !important; }
+:deep(.tsel) .n-base-selection-label { color: #abb2bf !important; font-family: inherit !important; font-size: 12px !important; }
+:deep(.tsel) .n-base-selection-input { color: #abb2bf !important; }
+
+/* 按钮 */
+.btn { background: #2c313a; color: #abb2bf; border: none; padding: 4px 14px; border-radius: 4px; font-family: inherit; font-size: 12px; cursor: pointer; }
+.btn:hover { background: #3b4048; color: #e5c07b; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.suc { color: #98c379; }
+.btn.suc:hover { color: #e5c07b; }
+
+/* 路径显示 */
+.path { font-size: 12px; color: #5c6370; padding: 4px 8px; background: #1a1d27; border-radius: 4px; word-break: break-all; font-family: inherit; }
+
+/* 弹窗 */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal { width: 380px; background: #0b0e14; border: 1px solid #2c313a; border-radius: 8px; overflow: hidden; }
+.modal-bar { display: flex; align-items: center; gap: 8px; padding: 9px 16px; background: #1a1d27; }
+.modal-body { padding: 16px 20px; }
 </style>
