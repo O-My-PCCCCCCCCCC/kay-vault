@@ -155,7 +155,6 @@ function infoOpen(g: string) { return openGroups.value.has(g) || view.value.star
 function selectGroup(g: string) { openGroups.value = new Set([g]); view.value = g }
 function selectCat(g: string, c: string) { openGroups.value = new Set([g]); view.value = g + '/' + c }
 function itemCount(grp: any) { return grp.categories.reduce((s: number, c: any) => s + c.items.length, 0) }
-function togglePwd(id: string) { showPwd.value = showPwd.value === id ? null : id }
 
 function openCreate() { if (app.vaultLocked) { msg.warning('密码库已锁定'); return }; editingEntry.value = null; showForm.value = true }
 function openEdit(e: VaultEntry) { if (app.vaultLocked) { msg.warning('密码库已锁定'); return }; editingEntry.value = { ...e }; showForm.value = true }
@@ -181,11 +180,18 @@ async function doDelete() {
   } catch { msg.error('主密码错误，无法删除') }
 }
 
+function lockedWarn() { msg.warning('密码库已锁定') }
 async function copy(t: string, m: string) {
+  if (app.vaultLocked) { lockedWarn(); return }
   try { await navigator.clipboard.writeText(t); msg.success(m) } catch { msg.error('复制失败') }
 }
 async function openUrl(url: string) {
+  if (app.vaultLocked) { lockedWarn(); return }
   try { await invoke('open_url', { url }) } catch (e: any) { msg.error(String(e)) }
+}
+function togglePwd(id: string) {
+  if (app.vaultLocked) { lockedWarn(); return }
+  showPwd.value = showPwd.value === id ? null : id
 }
 </script>
 
