@@ -24,8 +24,12 @@ fn compute_verify_tag(key: &[u8]) -> Vec<u8> {
 pub fn get_machine_id() -> String {
     #[cfg(windows)]
     {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         if let Ok(out) = std::process::Command::new("powershell")
+            .creation_flags(CREATE_NO_WINDOW)
             .args([
+                "-NoProfile",
                 "-Command",
                 "(Get-CimInstance -ClassName Win32_LogicalDisk -Filter 'DeviceID=\"C:\"').VolumeSerialNumber",
             ])

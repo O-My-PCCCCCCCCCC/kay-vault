@@ -9,6 +9,7 @@ mod session;
 
 use tauri::Manager;
 use std::path::PathBuf;
+#[cfg(windows)] use std::os::windows::process::CommandExt;
 
 pub fn vault_path() -> PathBuf {
     let home = std::env::var("HOME")
@@ -188,8 +189,10 @@ fn dir_size(path: &std::path::Path) -> u64 {
 
 fn get_disk_info() -> (u64, u64) {
     #[cfg(windows)] {
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         let out = std::process::Command::new("powershell")
-            .args(["-Command", "Get-PSDrive C | Select-Object Used,Free | ConvertTo-Json"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(["-NoProfile", "-Command", "Get-PSDrive C | Select-Object Used,Free | ConvertTo-Json"])
             .output().ok();
         if let Some(o) = out {
             let s = String::from_utf8_lossy(&o.stdout);
