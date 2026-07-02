@@ -84,7 +84,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useMessage } from 'naive-ui'
+import { useMessage } from "naive-ui"
+import { copySecure } from "../utils/clipboard"
 import { invoke } from '@tauri-apps/api/core'
 
 const msg = useMessage()
@@ -117,10 +118,10 @@ function generate() {
 function gen() { generate() }
 async function cpy() {
   if (!pwd.value) return
-  try { await navigator.clipboard.writeText(pwd.value); msg.success('已复制') } catch { msg.error('复制失败') }
+  try { await copySecure(pwd.value); msg.success('已复制') } catch { msg.error('复制失败') }
 }
 async function cpHist(t: string) {
-  try { await navigator.clipboard.writeText(t); msg.success('已复制') } catch { msg.error('复制失败') }
+  try { await copySecure(t); msg.success('已复制') } catch { msg.error('复制失败') }
 }
 
 // SHA-PIN
@@ -137,7 +138,7 @@ async function doSha() {
   finally { spBusy.value = false }
 }
 async function cpSha(t: string) {
-  try { await navigator.clipboard.writeText(t); msg.success('已复制') } catch { msg.error('复制失败') }
+  try { await copySecure(t); msg.success('已复制') } catch { msg.error('复制失败') }
 }
 
 onMounted(() => { generate() })

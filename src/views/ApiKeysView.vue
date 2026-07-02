@@ -63,7 +63,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from "@tauri-apps/api/core"
+import { copySecure } from "../utils/clipboard"
 import { useMessage } from 'naive-ui'
 import { useAppStore } from '../stores/app'
 
@@ -168,7 +169,7 @@ function edit(i: number) { if (app.apiLocked) { msg.warning("API 密钥已锁定
 function save() { if (!f.name||!f.key) { msg.warning('请填写完整'); return }; const e: AK = { name:f.name, key:f.key, provider:f.provider||'自定义', base_url:f.base_url||du.value, notes:f.notes||'', created_at:new Date().toISOString() }; if (ei.value>=0) { keys.value[ei.value] = {...e, created_at: keys.value[ei.value].created_at} } else { keys.value.push(e) }; saveAll().then(()=>{msg.success('已保存');fm.value=false}) }
 function del(i: number) { if (app.apiLocked) { msg.warning("API 密钥已锁定"); return }; delAkTarget.value = i; delAkPwd.value = ""; showDelAk.value = true }
 async function doDelAk() { if (delAkTarget.value < 0 || !delAkPwd.value) return; try { await invoke('session_login', { password: delAkPwd.value }); keys.value.splice(delAkTarget.value, 1); await saveAll(); msg.success('已删除') } catch { msg.error('主密码错误，无法删除') } finally { showDelAk.value = false; delAkTarget.value = -1; delAkPwd.value = '' } }
-async function cpKey(k: string) { if (app.apiLocked) { msg.warning('API 密钥已锁定'); return }; try { await navigator.clipboard.writeText(k); msg.success('已复制') } catch { msg.error('复制失败') } }
+async function cpKey(k: string) { if (app.apiLocked) { msg.warning('API 密钥已锁定'); return }; try { await copySecure(k); msg.success('已复制') } catch { msg.error('复制失败') } }
 onMounted(load)
 </script>
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { clearClipboard } from '../utils/clipboard'
 
 export type ThemeName = 'red' | 'blue' | 'purple' | 'green' | 'orange' | 'pink'
 
@@ -33,8 +34,9 @@ export const useAppStore = defineStore('app', () => {
     return sid
   }
 
-  /** 完全锁定：清 session */
+  /** 完全锁定：清 session + 清剪贴板 */
   async function logout() {
+    await clearClipboard()
     if (sessionId.value) {
       try { await invoke('session_lock', { sessionId: sessionId.value }) } catch { /* 忽略 */ }
       sessionId.value = null

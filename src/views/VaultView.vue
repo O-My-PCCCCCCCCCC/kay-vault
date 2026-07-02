@@ -84,7 +84,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useMessage } from 'naive-ui'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from "@tauri-apps/api/core"
+import { copySecure } from "../utils/clipboard"
 import { useAppStore } from '../stores/app'
 import { useVaultStore, type VaultEntry } from '../stores/vault'
 import PasswordForm from '../components/PasswordForm.vue'
@@ -183,7 +184,7 @@ async function doDelete() {
 function lockedWarn() { msg.warning('密码库已锁定') }
 async function copy(t: string, m: string) {
   if (app.vaultLocked) { lockedWarn(); return }
-  try { await navigator.clipboard.writeText(t); msg.success(m) } catch { msg.error('复制失败') }
+  try { await copySecure(t); msg.success(m) } catch { msg.error('复制失败') }
 }
 async function openUrl(url: string) {
   if (app.vaultLocked) { lockedWarn(); return }

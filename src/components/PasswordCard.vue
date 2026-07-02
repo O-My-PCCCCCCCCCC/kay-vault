@@ -41,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue"
+import { copySecure } from "../utils/clipboard"
 import { useMessage } from 'naive-ui'
 import {
   Copy20Filled as CopyIcon,
@@ -60,7 +61,7 @@ const message = useMessage()
 
 async function copyText(text: string) {
   try {
-    await navigator.clipboard.writeText(text)
+    await copySecure(text)
     message.success('已复制')
   } catch {
     message.error('复制失败')

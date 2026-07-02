@@ -34,7 +34,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from "@tauri-apps/api/core"
+import { copySecure } from "../utils/clipboard"
 import { useMessage } from 'naive-ui'
 
 const msg = useMessage()
@@ -52,7 +53,7 @@ async function run() {
 }
 async function cpy() {
   if (!r.value) return
-  try { await navigator.clipboard.writeText(r.value.final_password); msg.success('已复制') }
+  try { await copySecure(r.value.final_password); msg.success('已复制') }
   catch { msg.error('复制失败') }
 }
 </script>
