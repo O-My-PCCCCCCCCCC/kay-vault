@@ -112,7 +112,7 @@ const searchResults = computed(() => {
       return true
     }
     return false
-  }).map(e => ({ entry: e, matches: (e as any)._matches }))
+  }).slice(0, 20).map(e => ({ entry: e, matches: (e as any)._matches }))
 })
 
 // 高亮文本
