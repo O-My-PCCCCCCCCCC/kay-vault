@@ -1,75 +1,58 @@
 <template>
-  <div class="genv">
-    <h2 class="page-title">🎲 生成器</h2>
+  <div class="term">
+    <div class="term-bar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="bar-text">➜  ~/generator</span></div>
 
-    <n-tabs v-model:value="tab" type="line" animated>
-      <!-- ─── 随机密码 ─── -->
-      <n-tab-pane name="random" tab="🎲 随机密码">
-        <div class="gen-card">
-          <div class="out-row">
-            <n-input :value="pwd" readonly size="large" placeholder="点击生成" />
-            <n-button @click="gen" circle><template #icon>🔄</template></n-button>
-            <n-button type="primary" @click="cpy" :disabled="!pwd">复制</n-button>
-          </div>
-          <n-divider style="margin: 12px 0" />
-          <div class="opt-row">
-            <span class="opt-label">长度: {{ len }}</span>
-            <n-slider v-model:value="len" :min="4" :max="128" style="width: 200px" />
-          </div>
-          <div class="opt-checks">
-            <n-checkbox v-model:checked="up">大写 (A-Z)</n-checkbox>
-            <n-checkbox v-model:checked="low">小写 (a-z)</n-checkbox>
-            <n-checkbox v-model:checked="dig">数字 (0-9)</n-checkbox>
-            <n-checkbox v-model:checked="sym">符号 (!@#$%...)</n-checkbox>
-            <n-checkbox v-model:checked="nosim">排除相似 (0OIl1)</n-checkbox>
-          </div>
+    <!-- 标签切换 -->
+    <div class="tab-bar">
+      <span class="tab" :class="{on:tab==='random'}" @click="tab='random'">🎲 随机密码</span>
+      <span class="tab" :class="{on:tab==='sha'}" @click="tab='sha'">🔢 SHA-PIN</span>
+    </div>
+
+    <!-- ─── 随机密码 ─── -->
+    <div v-if="tab==='random'" class="term-body">
+      <div class="sec">
+        <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">gen</span> <span class="pf">--生成</span> <button class="btn" @click="gen">▶ 生成</button> <span class="ll">{{ pwd || '点击生成' }}</span> <button class="btn sec" @click="cpy" :disabled="!pwd">📋 复制</button></div>
+        <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">gen</span> <span class="pf">--长度</span> <span class="lo" :class="{on:len===8}" @click="len=8">8</span><span class="lo" :class="{on:len===16}" @click="len=16">16</span><span class="lo" :class="{on:len===24}" @click="len=24">24</span><span class="lo" :class="{on:len===32}" @click="len=32">32</span><span class="lo" :class="{on:len===64}" @click="len=64">64</span> <span class="ll">位 ({{ len }})</span></div>
+        <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">gen</span> <span class="pf">--字符</span> <span class="lo" :class="{on:up}" @click="up=!up">大写</span><span class="lo" :class="{on:low}" @click="low=!low">小写</span><span class="lo" :class="{on:dig}" @click="dig=!dig">数字</span><span class="lo" :class="{on:sym}" @click="sym=!sym">符号</span><span class="lo" :class="{on:nosim}" @click="nosim=!nosim">排除相似</span></div>
+      </div>
+
+      <div class="sec-div">─── 历史 ───</div>
+
+      <div class="sec hist">
+        <div v-if="history.length===0" class="ol ow">还没有生成过密码</div>
+        <div v-for="(item,i) in history" :key="i" class="hist-item" @click="cpHist(item)">
+          <span class="hist-n">#{{ history.length-i }}</span>
+          <span class="hist-p">{{ item }}</span>
+          <span class="hist-c">📋</span>
         </div>
+      </div>
+    </div>
 
-        <n-divider />
-
-        <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--text-secondary)">📋 此页面生成的密码</h3>
-        <div v-if="history.length === 0" class="hist-empty">还没有生成过密码</div>
-        <div v-else class="hist-list">
-          <div v-for="(item, i) in history" :key="i" class="hist-item" @click="cpHist(item)">
-            <span class="hist-idx">#{{ history.length - i }}</span>
-            <span class="hist-text">{{ item }}</span>
-            <span class="hist-btn">复制</span>
-          </div>
+    <!-- ─── SHA-PIN ─── -->
+    <div v-if="tab==='sha'" class="term-body">
+      <div class="sec">
+        <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--输入A</span> <input v-model="spA" class="ti" @keyup.enter="focusB" /></div>
+        <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--输入B</span> <input ref="spBRef" v-model="spB" class="ti" @keyup.enter="doSha" /></div>
+        <div class="line"><span class="p">└─<span class="ps">$</span></span> <span class="pc">sha-pin</span> <span class="pf">--位数</span> <span class="lo" :class="{on:spLen===4}" @click="spLen=4">4</span><span class="lo" :class="{on:spLen===6}" @click="spLen=6">6</span><span class="lo" :class="{on:spLen===8}" @click="spLen=8">8</span> <span class="ll">位</span></div>
+        <div class="line">
+          <button class="btn" @click="doSha" :disabled="!spA||!spB||spBusy">{{ spBusy ? '⏳' : '▶' }} 生成</button>
+          <button class="btn sec" @click="clearSha">✕ 清除</button>
         </div>
-      </n-tab-pane>
+      </div>
 
-      <!-- ─── SHA-PIN ─── -->
-      <n-tab-pane name="sha" tab="🔢 SHA-PIN">
-        <div class="gen-card">
-          <div class="sp-row"><span class="sp-label">输入A</span><n-input v-model:value="spA" placeholder="github.com" size="large" @keyup.enter="focusB" /></div>
-          <div class="sp-row"><span class="sp-label">输入B</span><n-input ref="spBRef" v-model:value="spB" placeholder="········" size="large" @keyup.enter="doSha" /></div>
-          <div class="sp-row">
-            <span class="sp-label">位数</span>
-            <n-radio-group v-model:value="spLen">
-              <n-radio-button :value="4">4</n-radio-button>
-              <n-radio-button :value="6">6</n-radio-button>
-              <n-radio-button :value="8">8</n-radio-button>
-            </n-radio-group>
-          </div>
-          <div class="sp-acts">
-            <n-button type="primary" @click="doSha" :loading="spBusy" :disabled="!spA||!spB">生成</n-button>
-            <n-button @click="clearSha">清除</n-button>
-          </div>
-
-          <n-divider v-if="spResult" style="margin: 12px 0" />
-          <div v-if="spResult" class="sp-result">
-            <div class="sp-line">正向链: <span class="sp-hl">{{ spResult.forward_result }}</span></div>
-            <div class="sp-line">反向链: <span class="sp-hl">{{ spResult.reverse_result }}</span></div>
-            <div class="sp-out">
-              <span>最终密码</span>
-              <span class="sp-final">{{ spResult.final_password }}</span>
-              <n-button size="small" @click="cpSha(spResult.final_password)">复制</n-button>
-            </div>
-          </div>
-          <div v-if="spErr" class="sp-err">{{ spErr }}</div>
+      <div v-if="spResult" class="sec">
+        <div class="sec-div">─── 正向链 ───</div>
+        <div class="ol od">{{ spResult.forward_result }}</div>
+        <div class="sec-div">─── 反向链 ───</div>
+        <div class="ol od">{{ spResult.reverse_result }}</div>
+        <div class="sec-div">═══ 最终结果 ═══</div>
+        <div class="sp-out">
+          <span class="sp-fv">{{ spResult.final_password }}</span>
+          <button class="btn sec" @click="cpSha(spResult.final_password)">复制</button>
         </div>
-      </n-tab-pane>
-    </n-tabs>
+      </div>
+      <div v-if="spErr" class="ol oe">{{ spErr }}</div>
+    </div>
   </div>
 </template>
 
@@ -116,46 +99,74 @@ const spA = ref(''), spB = ref(''), spLen = ref(6), spBusy = ref(false), spErr =
 const spResult = ref<{ forward_result: string; reverse_result: string; final_password: string } | null>(null)
 const spBRef = ref<HTMLInputElement | null>(null)
 function focusB() { spBRef.value?.focus?.() }
-function clearSha() { spA.value = ''; spB.value = ''; spResult.value = null; spErr.value = '' }
+function clearSha() { spA.value=''; spB.value=''; spResult.value=null; spErr.value='' }
 async function doSha() {
   if (!spA.value.trim() || !spB.value.trim()) return
-  spBusy.value = true; spErr.value = ''; spResult.value = null
+  spBusy.value=true; spErr.value=''; spResult.value=null
   try { spResult.value = await invoke('sha_pin_run', { input1: spA.value, input2: spB.value, passwordLen: spLen.value }) }
   catch (e: any) { spErr.value = String(e) }
-  finally { spBusy.value = false }
+  finally { spBusy.value=false }
 }
 async function cpSha(t: string) {
   try { await navigator.clipboard.writeText(t); msg.success('已复制') } catch { msg.error('复制失败') }
 }
 
-onMounted(() => { generate() })
+onMounted(() => generate())
 </script>
 
 <style scoped>
-.genv { padding: 16px 20px; height: 100vh; overflow-y: auto; }
-.page-title { font-size: 16px; font-weight: 700; color: var(--accent-red); margin-bottom: 16px; }
-.gen-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-.out-row { display: flex; gap: 8px; align-items: center; }
-.opt-row { display: flex; align-items: center; gap: 16px; }
-.opt-label { color: var(--text-secondary); font-size: 13px; min-width: 60px; }
-.opt-checks { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
-.hist-empty { color: var(--text-muted); padding: 24px; text-align: center; }
-.hist-list { display: flex; flex-direction: column; gap: 2px; }
-.hist-item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; cursor: pointer; transition: background 0.12s; }
-.hist-item:hover { background: var(--bg-secondary); }
-.hist-idx { color: var(--text-muted); font-size: 11px; min-width: 28px; font-family: monospace; }
-.hist-text { flex: 1; font-family: monospace; font-size: 13px; color: var(--text-primary); letter-spacing: 0.5px; }
-.hist-btn { font-size: 11px; color: var(--accent-blue); opacity: 0; transition: opacity 0.15s; }
-.hist-item:hover .hist-btn { opacity: 1; }
-.hist-btn:hover { text-decoration: underline; }
+.term { height: 100vh; display: flex; flex-direction: column; background: #0b0e14; font-family: 'Consolas','Courier New',monospace; font-size: 14px; color: #abb2bf; }
+.term-bar { display: flex; align-items: center; gap: 8px; padding: 9px 16px; background: #1a1d27; flex-shrink: 0; }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.red { background: #ff5f57; } .yellow { background: #ffbd2e; } .green { background: #28c840; }
+.bar-text { margin-left: 8px; font-size: 12px; color: #5c6370; }
 
-/* SHA-PIN */
-.sp-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.sp-label { color: var(--text-secondary); font-size: 13px; min-width: 56px; flex-shrink: 0; }
-.sp-acts { display: flex; gap: 8px; margin-top: 4px; }
-.sp-line { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-family: monospace; }
-.sp-hl { color: var(--accent-red); font-weight: 600; }
-.sp-out { margin-top: 10px; padding: 10px 14px; background: var(--bg-primary); border-radius: 6px; border-left: 3px solid var(--accent-red); display: flex; align-items: center; gap: 12px; }
-.sp-final { flex: 1; font-family: monospace; font-size: 18px; font-weight: bold; color: #e5c07b; letter-spacing: 3px; }
-.sp-err { color: var(--accent-red); font-size: 13px; margin-top: 8px; }
+/* 标签 */
+.tab-bar { display: flex; gap: 0; border-bottom: 1px solid #1a1d27; flex-shrink: 0; padding: 0 16px; }
+.tab { padding: 8px 16px; font-size: 13px; color: #5c6370; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.12s; }
+.tab:hover { color: #abb2bf; }
+.tab.on { color: #e5c07b; border-bottom-color: #e5c07b; }
+
+.term-body { flex: 1; overflow-y: auto; padding: 10px 20px 20px; }
+.sec { margin-bottom: 8px; }
+.sec-div { color: #2c313a; font-size: 12px; margin: 6px 0; text-align: center; }
+.line { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.p { color: #5c6370; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+.ps { color: #98c379; margin-right: 2px; }
+.pc { color: #61afef; font-size: 13px; }
+.pf { color: #d19a66; font-size: 12px; }
+.ll { color: #abb2bf; font-size: 13px; }
+
+/* 输入框 */
+.ti { background: transparent; border: none; outline: none; color: #abb2bf; font-family: inherit; font-size: 14px; width: 260px; border-bottom: 1px solid #2c313a; padding: 1px 4px; }
+.ti:focus { border-bottom-color: #61afef; }
+
+/* 选项按钮 */
+.lo { display: inline-block; padding: 2px 10px; margin: 0 2px; font-size: 12px; color: #5c6370; cursor: pointer; border: 1px solid #2c313a; border-radius: 4px; transition: all 0.12s; user-select: none; }
+.lo:hover { border-color: #61afef; color: #abb2bf; }
+.lo.on { border-color: #e5c07b; color: #e5c07b; background: rgba(229,192,123,0.08); }
+
+/* 按钮 */
+.btn { background: #2c313a; color: #abb2bf; border: none; padding: 4px 14px; border-radius: 4px; font-family: inherit; font-size: 12px; cursor: pointer; }
+.btn:hover { background: #3b4048; color: #e5c07b; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.sec { background: transparent; border: 1px solid #2c313a; }
+.btn.sec:hover { border-color: #5c6370; }
+
+/* 历史 */
+.hist { padding: 2px 0; }
+.ol { font-size: 13px; line-height: 1.7; }
+.od { color: #5c6370; }
+.oe { color: #e06c75; }
+.ow { color: #3b4048; text-align: center; padding: 12px; }
+.hist-item { display: flex; align-items: center; gap: 8px; padding: 3px 6px; margin: 1px 0; border-radius: 3px; cursor: pointer; }
+.hist-item:hover { background: #1a1d27; }
+.hist-n { color: #5c6370; font-size: 10px; min-width: 24px; }
+.hist-p { flex: 1; font-size: 12px; color: #abb2bf; letter-spacing: 1px; }
+.hist-c { font-size: 11px; opacity: 0; }
+.hist-item:hover .hist-c { opacity: 0.5; }
+
+/* SHA-PIN 结果 */
+.sp-out { margin: 8px 0; padding: 8px 14px; background: #1a1d27; border-radius: 6px; border-left: 3px solid #e5c07b; display: flex; align-items: center; gap: 12px; }
+.sp-fv { flex: 1; font-size: 18px; font-weight: bold; color: #ffd700; letter-spacing: 3px; font-family: inherit; }
 </style>
