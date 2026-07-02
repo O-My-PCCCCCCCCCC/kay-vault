@@ -94,8 +94,10 @@ const tab = ref('random')
 const pwd = ref('')
 const len = ref(16)
 const up = ref(true), low = ref(true), dig = ref(true), sym = ref(false), nosim = ref(false)
-const history = ref<string[]>([])
+const history = ref<string[]>(JSON.parse(localStorage.getItem('genHistory') || '[]'))
 const U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', L = 'abcdefghijklmnopqrstuvwxyz', D = '0123456789', S = '!@#$%^&*()_+-=[]{}|;:,.<>?', SIM = '0OIl1'
+
+function saveHistory() { localStorage.setItem('genHistory', JSON.stringify(history.value)) }
 
 function generate() {
   let chars = ''
@@ -110,6 +112,7 @@ function generate() {
   pwd.value = Array.from(arr).map(v => chars[v % chars.length]).join('')
   history.value.unshift(pwd.value)
   if (history.value.length > 10) history.value = history.value.slice(0, 10)
+  saveHistory()
 }
 function gen() { generate() }
 async function cpy() {

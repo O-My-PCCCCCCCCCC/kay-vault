@@ -45,6 +45,7 @@
         <div class="fr"><div class="fg f1"><label class="fl">📛 名称</label><n-input v-model:value="f.name" size="large" /></div><div class="fg f1"><label class="fl">🏢 提供商</label><n-auto-complete v-model:value="f.provider" :options="po" size="large" clearable /></div></div>
         <div class="fg"><label class="fl">🔑 密钥</label><n-input v-model:value="f.key" :type="fp?'text':'password'" size="large"><template #suffix><span class="fa" @click="fp=!fp">{{ fp?'🙈':'👁' }}</span></template></n-input></div>
         <div class="fg"><label class="fl">🌐 请求地址</label><n-input v-model:value="f.base_url" :placeholder="du" size="large" /></div>
+        <div class="fg"><label class="fl">📝 备注</label><n-input v-model:value="f.notes" type="textarea" size="large" :autosize="{minRows:2,maxRows:4}" /></div>
       </div>
       <div class="fbtns"><n-button size="large" ghost @click="fm=false">取消</n-button><n-button size="large" type="primary" @click="save">保存</n-button></div>
     </n-modal>
@@ -57,13 +58,13 @@ import { invoke } from '@tauri-apps/api/core'
 import { useMessage } from 'naive-ui'
 import { useAppStore } from '../stores/app'
 
-interface AK { name: string; key: string; provider: string; base_url: string; created_at: string }
+interface AK { name: string; key: string; provider: string; base_url: string; notes: string; created_at: string }
 const app = useAppStore()
 const msg = useMessage()
 
 const keys = ref<AK[]>([]), q = ref(''), loading = ref(false), sk = ref<number|null>(null)
 const sv = ref('all'), fm = ref(false), fp = ref(false), ei = ref(-1), sf = ref(false), hi = ref<number|null>(null)
-const f = reactive({ name: '', key: '', provider: '', base_url: '' })
+const f = reactive({ name: '', key: '', provider: '', base_url: '', notes: '' })
 
 const po = [
   {label:'🤖 OpenAI',value:'OpenAI'},
@@ -147,9 +148,9 @@ function mask(k: string) { if (!k||k.length<=8) return '••••••••
 function ts(i: number) { sk.value = sk.value === i ? null : i }
 async function load() { if (!app.sessionId) return; loading.value=true; try { keys.value = await invoke<AK[]>('api_keys_load',{sessionId:app.sessionId}) } catch{} finally{loading.value=false} }
 async function saveAll() { if (!app.sessionId) return; await invoke('api_keys_save',{keys:keys.value,sessionId:app.sessionId}) }
-function add() { ei.value=-1; f.name=''; f.key=''; f.provider=''; f.base_url=''; fm.value=true }
-function edit(i: number) { const k = items.value[i]; const idx = keys.value.indexOf(k); ei.value=idx; f.name=k.name; f.key=k.key; f.provider=k.provider; f.base_url=k.base_url; fm.value=true }
-function save() { if (!f.name||!f.key) { msg.warning('请填写完整'); return }; const e: AK = { name:f.name, key:f.key, provider:f.provider||'自定义', base_url:f.base_url||du.value, created_at:new Date().toISOString() }; if (ei.value>=0) { keys.value[ei.value] = {...e, created_at: keys.value[ei.value].created_at} } else { keys.value.push(e) }; saveAll().then(()=>{msg.success('已保存');fm.value=false}) }
+function add() { ei.value=-1; f.name=''; f.key=''; f.provider=''; f.base_url=''; f.notes=''; fm.value=true }
+function edit(i: number) { const k = items.value[i]; const idx = keys.value.indexOf(k); ei.value=idx; f.name=k.name; f.key=k.key; f.provider=k.provider; f.base_url=k.base_url; f.notes=k.notes||''; fm.value=true }
+function save() { if (!f.name||!f.key) { msg.warning('请填写完整'); return }; const e: AK = { name:f.name, key:f.key, provider:f.provider||'自定义', base_url:f.base_url||du.value, notes:f.notes||'', created_at:new Date().toISOString() }; if (ei.value>=0) { keys.value[ei.value] = {...e, created_at: keys.value[ei.value].created_at} } else { keys.value.push(e) }; saveAll().then(()=>{msg.success('已保存');fm.value=false}) }
 async function del(i: number) { if (!window.confirm(`删除「${keys.value[i].name}」？`)) return; keys.value.splice(i,1); await saveAll(); msg.success('已删除') }
 async function cpKey(k: string) { try { await navigator.clipboard.writeText(k); msg.success('已复制') } catch { msg.error('复制失败') } }
 onMounted(load)

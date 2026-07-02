@@ -33,12 +33,12 @@
       <div class="s-row">
         <span class="s-label">密码库</span>
         <n-button v-if="!appStore.vaultLocked" size="small" @click="doLockVault">🔒 锁定</n-button>
-        <n-button v-else size="small" type="primary" @click="showUnlockVault = true">🔓 已锁定·解锁</n-button>
+        <n-button v-else size="small" type="primary" @click="appStore.unlockVault();message.success('已解锁')">🔓 已锁定·解锁</n-button>
       </div>
       <div class="s-row">
         <span class="s-label">API 密钥</span>
         <n-button v-if="!appStore.apiLocked" size="small" @click="doLockApi">🔒 锁定</n-button>
-        <n-button v-else size="small" type="primary" @click="showUnlockApi = true">🔓 已锁定·解锁</n-button>
+        <n-button v-else size="small" type="primary" @click="appStore.unlockApi();message.success('已解锁')">🔓 已锁定·解锁</n-button>
       </div>
     </div>
 
@@ -55,24 +55,6 @@
       <div class="s-group-title">💾 备份与还原</div>
       <BackupPanel />
     </div>
-
-    <!-- 解锁密码库 -->
-    <n-modal v-model:show="showUnlockVault" title="解锁密码库" preset="card" style="width: 340px">
-      <n-input v-model:value="unlockPwd" type="password" size="large" placeholder="输入主密码解锁" @keyup.enter="doUnlockVault" />
-      <div class="s-acts">
-        <n-button size="small" @click="showUnlockVault = false">取消</n-button>
-        <n-button size="small" type="primary" @click="doUnlockVault">解锁</n-button>
-      </div>
-    </n-modal>
-
-    <!-- 解锁 API -->
-    <n-modal v-model:show="showUnlockApi" title="解锁 API 密钥" preset="card" style="width: 340px">
-      <n-input v-model:value="unlockPwd" type="password" size="large" placeholder="输入主密码解锁" @keyup.enter="doUnlockApi" />
-      <div class="s-acts">
-        <n-button size="small" @click="showUnlockApi = false">取消</n-button>
-        <n-button size="small" type="primary" @click="doUnlockApi">解锁</n-button>
-      </div>
-    </n-modal>
 
     <!-- 修改主密码弹窗 -->
     <n-modal v-model:show="showChangePwd" title="修改主密码" preset="card" style="width: 380px">
@@ -109,9 +91,6 @@ const message = useMessage()
 const autoLock = ref(5)
 const backupPath = ref('')
 const showChangePwd = ref(false)
-const showUnlockVault = ref(false)
-const showUnlockApi = ref(false)
-const unlockPwd = ref('')
 const currentPwd = ref('')
 const newPwd = ref('')
 const confirmPwd = ref('')
@@ -170,16 +149,6 @@ function doLockVault() {
 
 function doLockApi() {
   appStore.lockApi(); message.success('API 密钥已锁定')
-}
-
-function doUnlockVault() {
-  appStore.unlockVault(); showUnlockVault.value = false
-  message.success('密码库已解锁')
-}
-
-function doUnlockApi() {
-  appStore.unlockApi(); showUnlockApi.value = false
-  message.success('API 密钥已解锁')
 }
 
 async function doChangePwd() {
