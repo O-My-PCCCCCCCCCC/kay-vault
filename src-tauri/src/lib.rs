@@ -301,7 +301,7 @@ fn import_from_file(file_path: String, password: String) -> Result<(), String> {
     let (salt, encrypted) = data.split_at(32);
     let key = crate::crypto::derive_key(&password, salt);
     let plaintext = crate::crypto::decrypt(encrypted, &key)
-        .map_err(|_| String::from("密码错误，无法导入备份文件"))?;
+        .map_err(|_| String::from("密码错误。请输入创建该备份文件时所用的主密码，不是当前的登录密码。"))?;
 
     // 验证是有效的 JSON（确保是密码库文件）
     let _: serde_json::Value = serde_json::from_slice(&plaintext)
