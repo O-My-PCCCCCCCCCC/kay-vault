@@ -29,11 +29,20 @@
 
         <h3 style="margin: 0 0 8px; font-size: 14px; color: var(--text-secondary)">📋 生成记录</h3>
         <div v-if="history.length === 0" class="hist-empty">还没有生成过密码</div>
-        <div v-else class="hist-list">
-          <div v-for="(item, i) in history" :key="i" class="hist-item" @click="cpHist(item)">
-            <span class="hist-idx">#{{ history.length - i }}</span>
-            <span class="hist-text">{{ item }}</span>
-            <span class="hist-btn">复制</span>
+        <div v-else class="hist-grid">
+          <div class="hist-col">
+            <div v-for="(item, i) in history.slice(0,5)" :key="i" class="hist-item" @click="cpHist(item)">
+              <span class="hist-idx">#{{ history.length - i }}</span>
+              <span class="hist-text">{{ item }}</span>
+              <span class="hist-btn">复制</span>
+            </div>
+          </div>
+          <div class="hist-col">
+            <div v-for="(item, i) in history.slice(5,10)" :key="i" class="hist-item" @click="cpHist(item)">
+              <span class="hist-idx">#{{ history.length - (i+5) }}</span>
+              <span class="hist-text">{{ item }}</span>
+              <span class="hist-btn">复制</span>
+            </div>
           </div>
         </div>
       </n-tab-pane>
@@ -100,7 +109,7 @@ function generate() {
   crypto.getRandomValues(arr)
   pwd.value = Array.from(arr).map(v => chars[v % chars.length]).join('')
   history.value.unshift(pwd.value)
-  if (history.value.length > 15) history.value = history.value.slice(0, 15)
+  if (history.value.length > 10) history.value = history.value.slice(0, 10)
 }
 function gen() { generate() }
 async function cpy() {
@@ -140,7 +149,8 @@ onMounted(() => { generate() })
 .opt-label { color: var(--text-secondary); font-size: 13px; min-width: 60px; }
 .opt-checks { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
 .hist-empty { color: var(--text-muted); padding: 24px; text-align: center; }
-.hist-list { display: flex; flex-direction: column; gap: 2px; }
+.hist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.hist-col { display: flex; flex-direction: column; gap: 2px; }
 .hist-item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 4px; cursor: pointer; transition: background 0.12s; }
 .hist-item:hover { background: var(--bg-secondary); }
 .hist-idx { color: var(--text-muted); font-size: 11px; min-width: 28px; font-family: monospace; }
