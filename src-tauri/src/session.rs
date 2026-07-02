@@ -124,20 +124,13 @@ impl SessionManager {
         self.sessions.lock().unwrap().remove(session_id);
     }
 
-    /// 取派生密钥（校验 TTL 和设备指纹）
+    /// 取派生密钥（只检查 TTL，设备指纹由心跳校验）
     pub fn get_key(&self, session_id: &str) -> Option<Vec<u8>> {
         let mut map = self.sessions.lock().unwrap();
         let data = map.get_mut(session_id)?;
 
         // 检查 TTL
         if Instant::now().duration_since(data.last_active) > SESSION_TTL {
-            map.remove(session_id);
-            return None;
-        }
-
-        // 检查设备指纹
-        let current_machine = get_machine_id();
-        if current_machine != data.machine_id {
             map.remove(session_id);
             return None;
         }
