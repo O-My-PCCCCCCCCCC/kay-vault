@@ -11,7 +11,7 @@ pub fn ensure_backup_dir(backup_root: &str) -> Result<(), String> {
 pub fn backup_vault(vault_path: &str, backup_root: &str) -> Result<String, String> {
     ensure_backup_dir(backup_root)?;
 
-    if !crate::auth::is_authorized() {
+    if !crate::auth::is_authorized_with_path(backup_root) {
         return Err("本机未认证，无法备份。请先在「设置 → 设备认证」中添加认证。".into());
     }
     if !Path::new(vault_path).exists() {
@@ -32,7 +32,7 @@ pub fn backup_vault(vault_path: &str, backup_root: &str) -> Result<String, Strin
 pub fn restore_vault(target_path: &str, backup_root: &str, backup_filename: Option<&str>) -> Result<(), String> {
     ensure_backup_dir(backup_root)?;
 
-    if !crate::auth::is_authorized() {
+    if !crate::auth::is_authorized_with_path(backup_root) {
         return Err("本机未认证，无法还原。请先在「设置 → 设备认证」中添加认证。".into());
     }
 

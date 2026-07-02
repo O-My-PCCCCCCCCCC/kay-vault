@@ -345,6 +345,7 @@ pub fn run() {
                     let _ = app.get_webview_window("main").map(|w| w.set_focus());
                 }),
             )?;
+            app.handle().plugin(tauri_plugin_dialog::init())?;
             Ok(())
         })
         .run(tauri::generate_context!())
