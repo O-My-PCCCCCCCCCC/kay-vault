@@ -1,5 +1,5 @@
 use chrono::Local;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// 确保备份目录存在
 pub fn ensure_backup_dir(backup_root: &str) -> Result<(), String> {
