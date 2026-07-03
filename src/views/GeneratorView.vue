@@ -1,10 +1,10 @@
 <template>
   <div class="genv">
-    <h2 class="page-title">🎲 生成器</h2>
+    <h2 class="page-title"><img src="/icons/gen.svg" class="pti"/> 生成器</h2>
 
     <n-tabs v-model:value="tab" type="line" animated>
       <!-- ─── 随机密码 ─── -->
-      <n-tab-pane name="random" tab="🎲 随机密码">
+      <n-tab-pane name="random" tab="随机密码">
         <div class="gen-card">
           <div class="out-row">
             <n-input :value="pwd" readonly size="large" placeholder="点击生成" />
@@ -48,7 +48,7 @@
       </n-tab-pane>
 
       <!-- ─── SHA-PIN ─── -->
-      <n-tab-pane name="sha" tab="🔢 SHA-PIN">
+      <n-tab-pane name="sha" tab="SHA-PIN">
         <div class="gen-card">
           <div class="sp-row"><span class="sp-label">输入A</span><n-input v-model:value="spA" placeholder="github.com" size="large" @keyup.enter="focusB" /></div>
           <div class="sp-row"><span class="sp-label">输入B</span><n-input ref="spBRef" v-model:value="spB" placeholder="········" size="large" @keyup.enter="doSha" /></div>
@@ -146,7 +146,7 @@ onMounted(() => { generate() })
 
 <style scoped>
 .genv { padding: 16px 20px; height: 100vh; overflow-y: auto; }
-.page-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
+.page-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
 .gen-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .out-row { display: flex; gap: 8px; align-items: center; }
 .opt-row { display: flex; align-items: center; gap: 16px; }

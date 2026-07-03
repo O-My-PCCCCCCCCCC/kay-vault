@@ -1,7 +1,7 @@
 <template>
   <div class="lock-screen">
     <div class="lock-card">
-      <div class="logo">🔑</div>
+      <div class="logo"><img src="/icons/lock-logo.png" class="lock-icon" /></div>
       <h2>凯伊密码管家</h2>
       <p class="subtitle">插入钥匙以继续</p>
       <div class="warning-banner">

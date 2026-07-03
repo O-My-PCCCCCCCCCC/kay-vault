@@ -1,11 +1,11 @@
 <template>
   <div class="settings-view">
-    <h2 class="s-title">⚙️ 设置</h2>
+    <h2 class="s-title"><img src="/icons/settings.svg" class="pti"/> 设置</h2>
 
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
-      <div class="s-group-title">🔒 安全</div>
+      <div class="s-group-title"><img src="/icons/lock.svg" class="ti"/> 安全</div>
       <div class="s-row">
         <span class="s-label">自动锁定</span>
         <n-select v-model:value="autoLock" :options="lockOptions" style="width: 130px" size="small" />
@@ -19,7 +19,7 @@
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
-      <div class="s-group-title">🎨 主题</div>
+      <div class="s-group-title"><img src="/icons/settings.svg" class="ti"/> 主题</div>
       <div class="theme-list">
         <div v-for="t in themes" :key="t.id" class="theme-item" :class="{on:appStore.theme===t.id}" @click="onThemeChange(t.id)">
           <div class="ti-preview"><div class="ti-bar" :style="{background:t.accent}"></div><div class="ti-body" :style="{background:t.bg}"></div></div>
@@ -31,7 +31,7 @@
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
-      <div class="s-group-title">📂 备份路径</div>
+      <div class="s-group-title"><img src="/icons/folder.svg" class="ti"/> 备份路径</div>
       <div class="s-row s-row-col">
         <div class="s-path">{{ backupPath || '未设置' }}</div>
         <n-button size="small" @click="pickBackupFolder">选择文件夹</n-button>
@@ -41,7 +41,7 @@
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
-      <div class="s-group-title">🔐 独立锁定</div>
+      <div class="s-group-title"><img src="/icons/lock.svg" class="ti"/> 独立锁定</div>
       <div class="s-row">
         <span class="s-label">密码库</span>
         <n-button v-if="!appStore.vaultLocked" size="small" @click="doLockVault">🔒 锁定</n-button>
@@ -57,14 +57,14 @@
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
-      <div class="s-group-title">🔐 设备认证</div>
+      <div class="s-group-title"><img src="/icons/shield.svg" class="ti"/> 设备认证</div>
       <DeviceAuthList />
     </div>
 
     <n-divider style="margin: 8px 0" />
 
     <div class="s-group">
-      <div class="s-group-title">💾 备份与还原</div>
+      <div class="s-group-title"><img src="/icons/drive.svg" class="ti"/> 备份与还原</div>
       <BackupPanel />
     </div>
 
@@ -223,7 +223,9 @@ async function doChangePwd() {
 
 <style scoped>
 .settings-view { padding: 16px 20px; overflow-y: auto; height: 100vh; font-size: 13px; }
-.s-title { font-size: 16px; font-weight: 700; color: var(--accent); }
+.pti { width: 20px; height: 20px; vertical-align: middle; }
+.ti { width: 14px; height: 14px; vertical-align: middle; margin-right: 2px; }
+.s-title { font-size: 16px; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 6px; }
 .s-group { padding: 4px 0; }
 .s-group-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
 .s-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }

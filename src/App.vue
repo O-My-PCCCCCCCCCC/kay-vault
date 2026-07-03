@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { darkTheme, zhCN, dateZhCN } from 'naive-ui'
 import { invoke } from '@tauri-apps/api/core'
@@ -180,10 +180,10 @@ onMounted(() => {
 })
 
 const menuOptions = [
-  { label: '🔑 我的密码', key: 'vault' },
-  { label: '🔐 API 密钥', key: 'api-keys' },
-  { label: '🎲 生成器', key: 'generator' },
-  { label: '⚙️ 设置', key: 'settings' },
+  { label: '我的密码', key: 'vault', icon: () => h('img', { src: '/icons/vault.svg', class: 'mi' }) },
+  { label: 'API 密钥', key: 'api-keys', icon: () => h('img', { src: '/icons/api.svg', class: 'mi' }) },
+  { label: '生成器', key: 'generator', icon: () => h('img', { src: '/icons/gen.svg', class: 'mi' }) },
+  { label: '设置', key: 'settings', icon: () => h('img', { src: '/icons/settings.svg', class: 'mi' }) },
 ]
 
 const routeMap: Record<string, string> = {
@@ -214,6 +214,7 @@ function onMenuChange(key: string) {
   flex-shrink: 0;
   font-family: var(--font-mono);
 }
+:deep(.mi) { width: 18px; height: 18px; vertical-align: middle; }
 .sider-menu-wrap {
   flex: 1;
   overflow-y: auto;

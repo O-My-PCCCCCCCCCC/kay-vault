@@ -1,6 +1,6 @@
 <template>
   <div class="tpv">
-    <h2 class="page-title">🔢 SHA-PIN 生成器</h2>
+    <h2 class="page-title"><img src="/icons/sha.svg" class="pti"/> SHA-PIN 生成器</h2>
 
     <div class="tp-card">
       <div class="tp-row"><span class="tp-label">输入A</span><n-input v-model:value="i1" size="large" @keyup.enter="f2" /></div>
@@ -60,7 +60,7 @@ async function cpy() {
 
 <style scoped>
 .tpv { padding: 16px 20px; height: 100vh; overflow-y: auto; }
-.page-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
+.page-title { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
 .tp-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .tp-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .tp-label { color: var(--text-secondary); font-size: 13px; min-width: 56px; flex-shrink: 0; }
