@@ -168,7 +168,7 @@ Offset  Size  Field         Description
                              Decryption fails if tag doesn't match.
 ```
 
-**Total minimum size**: 44 bytes (empty vault with minimum padding) + 16 byte tag = 60 bytes. Real vaults are larger due to JSON content.
+**Total minimum size**: 44 bytes (empty vault with minimum padding) + 16-byte tag = 60 bytes. Real vaults are larger due to JSON content.
 
 #### master.verify
 
@@ -342,7 +342,7 @@ Import Flow (from arbitrary file):
 | Attack Vector | Outcome | Reasoning |
 |--------------|---------|-----------|
 | **Physical USB theft, reading vault.enc** | ❌ Protected | AES-256-GCM with Argon2id-derived key. Without the master password, the ciphertext is computationally indistinguishable from random noise |
-| **Master password brute-force** | ❌ Infeasible | Argon2id memory-hardness (64MB memory, 3 iterations): ~300ms per attempt. An 8-character mixed-case alphanumeric password (62^8 ≈ 2.18×10^14) exceeds the age of the universe to exhaust |
+| **Master password brute-force** | ❌ Infeasible | Argon2id memory-hardness (64MB memory, 3 iterations): ~300ms per attempt. An 8-character mixed-case alphanumeric password (62^8 ≈ 2.18×10^14) would require billions of years to exhaust |
 | **Quantum computer attack on AES-256** | ❌ Not vulnerable | AES-256's post-quantum security is ~2^128 (Grover's algorithm halves the key space). Still beyond any practical capability |
 | **DMA attack reading Rust heap** | ⚠️ Hard | Requires physical PCIe/eSATA access. Windows 10+ includes Kernel DMA Protection by default on modern hardware |
 | **Screen capture of decrypted data** | ❌ Blocked | `SetWindowDisplayAffinity(WDA_MONITOR)` prevents any screen capture API from reading the window content |
@@ -611,7 +611,13 @@ This means:
 
 ### ☕ Support the Author
 
-*Sponsorship link coming soon — payment channel will be set up tomorrow.*
+If you'd like to support this project, scan the QR code below and buy the author a can of Monster Energy — it keeps this little project alive 🙏
+
+<p align="center">
+  <img src="docs/support/sponsor.jpg" alt="Sponsorship QR code" width="280" />
+</p>
+
+> Every bit of support keeps the author going ❤️
 
 *Created by [追寻光的影](https://github.com/O-My-PCCCCCCCCCC) · 2026*
 
